@@ -10,23 +10,13 @@ namespace Gedx8MusicDriver.Core
         private readonly object?[] _cachedObjects148 = new object?[13];
         private DirectMusicLoaderContext? _loaderContext;
         private bool _disposed;
-
-        // Mirrors the mutable dword touched by sub_10003E20 / sub_10003E50.
         private int _value00;
-
-        // Mirrors the two dwords written by sub_10003BC0 and read by sub_10003BE0.
         private int _value04;
         private int _value08;
-
-        // Mirrors the runtime mode/type fields initialized in sub_10002380.
         private int _value1B0;
         private int _value1B4;
-
-        // Mirrors the byte/int pair manipulated by sub_100024D0 / sub_10002520 / sub_10002560.
         private byte _value1B8;
         private int _value1BC;
-
-        // Mirrors the cached dispatch object pointer and the secondary interface field.
         private object? _value1C0;
         private int _value1C4;
 
@@ -54,28 +44,25 @@ namespace Gedx8MusicDriver.Core
 
         internal bool InitializeSynthesizer(Gedx8SynthInitConfig config)
         {
-            // sub_10003D00 uses a 0x28-byte init block and then applies four property writes.
-            // Only the state that is observable from the current project is retained here.
             if (_disposed || config.SampleRate <= 0)
             {
                 return false;
             }
 
-            int initLength = 0x28;
-            int channelGroups = 1;
-            int voices = 7;
-            int flags = 0x3F;
-
+            SynthInitConfig = new Gedx8SynthInitConfig(0x28, config.SampleRate, config.Config);
+            IsSynthInitialized = true;
             _value00 = 0;
-            SynthInitConfig = new Gedx8SynthInitConfig(initLength, config.SampleRate, config.Config);
-            IsSynthInitialized = channelGroups == 1 && voices == 7 && flags == 0x3F;
-            return IsSynthInitialized;
+            return true;
         }
 
         internal bool Call03BC0(int value0, int value1)
         {
-            // sub_10003BC0
-            if (_disposed || value0 == 0 || value1 == 0)
+            if (_disposed || !IsSynthInitialized)
+            {
+                return false;
+            }
+
+            if (value0 == 0 || value1 == 0)
             {
                 return false;
             }
@@ -87,7 +74,6 @@ namespace Gedx8MusicDriver.Core
 
         internal bool TryGetPair03BE0(out int value0, out int value1)
         {
-            // sub_10003BE0
             if (_disposed || _value04 == 0 || _value08 == 0)
             {
                 value0 = 0;
@@ -102,26 +88,22 @@ namespace Gedx8MusicDriver.Core
 
         internal bool Call03C90()
         {
-            // sub_10003C90 performs a vtable +0x30 call on the active runtime object.
-            return !_disposed && IsSynthInitialized;
+            return !_disposed && IsSynthInitialized && _value1C0 != null;
         }
 
         internal bool Call03CA0()
         {
-            // sub_10003CA0 performs a vtable +0x24 call with token 1000C328.
-            return !_disposed && IsSynthInitialized;
+            return !_disposed && IsSynthInitialized && _value1C0 != null;
         }
 
         internal bool Call03E00()
         {
-            // sub_10003E00 performs a vtable +0x98 call on the active runtime object.
-            return !_disposed && IsSynthInitialized;
+            return !_disposed && IsSynthInitialized && _value1C0 != null;
         }
 
         internal bool Call03E20(int value)
         {
-            // sub_10003E20 updates this+0 when the value changes and then writes property 1000C2D8.
-            if (_disposed || !IsSynthInitialized)
+            if (_disposed || !IsSynthInitialized || _value1C0 == null)
             {
                 return false;
             }
@@ -136,8 +118,7 @@ namespace Gedx8MusicDriver.Core
 
         internal bool Call03E50(int value)
         {
-            // sub_10003E50 always forwards the supplied dword to property 1000C2D8.
-            if (_disposed || !IsSynthInitialized)
+            if (_disposed || !IsSynthInitialized || _value1C0 == null)
             {
                 return false;
             }
@@ -148,7 +129,6 @@ namespace Gedx8MusicDriver.Core
 
         internal bool PrepareLoaderContext(string searchDirectory)
         {
-            // This remains the managed equivalent of the observed DirectMusic loader path.
             if (_disposed || string.IsNullOrWhiteSpace(searchDirectory))
             {
                 return false;
@@ -165,7 +145,7 @@ namespace Gedx8MusicDriver.Core
             }
 
             _loaderContext = context;
-            _value1B0 = (int)Gedx8LoaderMode.DirectMusicCom;
+            _value1B0 = 2;
             return true;
         }
 
@@ -176,33 +156,79 @@ namespace Gedx8MusicDriver.Core
                 return null;
             }
 
-            if (!string.IsNullOrWhiteSpace(searchDirectory))
+            string? effectiveSearchDirectory = searchDirectory;
+            int loaderMode;
+
+            if (string.IsNullOrWhiteSpace(searchDirectory))
             {
-                PrepareLoaderContext(searchDirectory);
+                if (string.IsNullOrWhiteSpace(SearchDirectory))
+                {
+                    return null;
+                }
+
+                effectiveSearchDirectory = SearchDirectory;
+                loaderMode = 1;
+            }
+            else
+            {
+                if (!PrepareLoaderContext(searchDirectory))
+                {
+                    return null;
+                }
+
+                effectiveSearchDirectory = searchDirectory;
+                loaderMode = 2;
             }
 
-            string? resolvedPath = ResolvePath(fileName, searchDirectory);
-            return new Gedx8LoadedObject(kind, fileName, searchDirectory ?? SearchDirectory, resolvedPath);
+            string? resolvedPath = ResolvePath(fileName, effectiveSearchDirectory);
+            if (resolvedPath == null)
+            {
+                return null;
+            }
+
+            Gedx8LoadedObject loadedObject = new(kind, fileName, effectiveSearchDirectory, resolvedPath);
+
+            switch (kind)
+            {
+                case Gedx8ObjectKind.Composite:
+                    loadedObject.Sub10004120(0, loaderMode, resolvedPath, this, resolvedPath, effectiveSearchDirectory, 0, 0, 0, null);
+                    break;
+
+                case Gedx8ObjectKind.ThinType1:
+                    loadedObject.Sub10002D30(1, loaderMode, resolvedPath);
+                    break;
+
+                case Gedx8ObjectKind.ThinType2:
+                    loadedObject.Sub10002D30(2, loaderMode, resolvedPath);
+                    break;
+
+                default:
+                    return null;
+            }
+
+            return loadedObject;
         }
 
-        internal bool ReleaseCurrentObject100024B0()
+        internal void ReleaseCurrentObject100024B0()
         {
-            // sub_100024B0 releases the cached object at this+1C0 when it is non-null.
             if (_disposed)
             {
-                return false;
+                return;
             }
 
             _value1C0 = null;
-            return true;
         }
 
         internal bool SetSelectionByte(byte value)
         {
-            // sub_100024D0 updates this+1B8 when the active object accepts the new byte.
-            if (_disposed)
+            if (_disposed || _value1C0 == null)
             {
                 return false;
+            }
+
+            if (_value1B8 == value)
+            {
+                return true;
             }
 
             _value1B8 = value;
@@ -211,48 +237,60 @@ namespace Gedx8MusicDriver.Core
 
         internal bool BindSelection(int selection, int mode)
         {
-            // sub_10002520 stores the selection in this+1BC after a successful vtable +0x14 call.
-            if (_disposed || selection < 0 || mode < 0)
+            if (_disposed || _value1C0 == null)
+            {
+                return false;
+            }
+
+            if (selection < 0 || mode < 0)
             {
                 return false;
             }
 
             _value1BC = selection;
-            _value1B8 = unchecked((byte)mode);
             return true;
         }
 
         internal bool GetSelection(out int selection)
         {
-            // sub_10002560
+            if (_disposed)
+            {
+                selection = 0;
+                return false;
+            }
+
             selection = _value1BC;
-            return !_disposed;
+            return true;
         }
 
         internal bool DispatchProperty(int selector, int value, bool setMode, out int storedValue)
         {
-            // sub_10002580 is a large selector-based dispatcher.
-            // The control structure below mirrors the observable preamble and selector cache behavior.
             storedValue = 0;
-            if (_disposed || selector < 0 || selector >= _propertyValues17C.Length)
+
+            if (_disposed || _value1C0 == null)
             {
                 return false;
             }
 
-            object? dispatchObject = _value1C0;
-            if (dispatchObject == null)
+            if (selector < 0 || selector >= _propertyValues17C.Length)
+            {
+                return false;
+            }
+
+            if (selector == 1 && _value1B0 != 2 && _value1B0 != 3)
             {
                 return false;
             }
 
             object? cachedObject = _cachedObjects148[selector];
-            if (cachedObject == null && setMode)
+            if (cachedObject == null)
             {
                 cachedObject = new object();
                 _cachedObjects148[selector] = cachedObject;
             }
 
             _propertyResolved17C[selector] = true;
+
             if (setMode)
             {
                 _propertyValues17C[selector] = value;
@@ -264,7 +302,6 @@ namespace Gedx8MusicDriver.Core
 
         internal void SetRuntimeModeFields10002380(int mode1B0, int value1B4, int interface1C4)
         {
-            // Mirrors the directly stored fields in sub_10002380.
             if (_disposed)
             {
                 return;
@@ -278,7 +315,6 @@ namespace Gedx8MusicDriver.Core
 
         internal void SetCurrentObject10002380(object? currentObject)
         {
-            // Mirrors this+1C0.
             if (_disposed)
             {
                 return;

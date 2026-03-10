@@ -7,24 +7,33 @@ namespace Gedx8MusicDriver.Core
         internal Gedx8SlotTable(int initialCapacity)
         {
             _slots = new List<T?>(Math.Max(1, initialCapacity));
-            EnsureCapacity(Math.Max(1, initialCapacity));
+            EnsureCapacityExact10002330(Math.Max(1, initialCapacity));
         }
 
         internal int LiveCount { get; private set; }
 
         internal int HighWaterMark { get; private set; }
 
+        internal int Capacity => _slots.Count;
+
         internal T Add(T value)
         {
             int index = FindFirstFreeIndex();
             if (index < 0)
             {
-                Grow();
+                EnsureGrowth100022C0();
                 index = FindFirstFreeIndex();
+            }
+
+            if (index < 0)
+            {
+                index = _slots.Count;
+                EnsureCapacityExact10002330(index + 1);
             }
 
             _slots[index] = value;
             LiveCount++;
+
             if (index + 1 > HighWaterMark)
             {
                 HighWaterMark = index + 1;
@@ -41,14 +50,7 @@ namespace Gedx8MusicDriver.Core
                 return false;
             }
 
-            _slots[index] = null;
-            if (LiveCount > 0)
-            {
-                LiveCount--;
-            }
-
-            TrimHighWaterMark();
-            return true;
+            return RemoveAt(index);
         }
 
         internal bool RemoveAt(int index)
@@ -64,12 +66,12 @@ namespace Gedx8MusicDriver.Core
             }
 
             _slots[index] = null;
+
             if (LiveCount > 0)
             {
                 LiveCount--;
             }
 
-            TrimHighWaterMark();
             return true;
         }
 
@@ -78,15 +80,37 @@ namespace Gedx8MusicDriver.Core
             return _slots.IndexOf(value);
         }
 
+        internal T? GetAt(int index)
+        {
+            if (index < 0 || index >= _slots.Count)
+            {
+                return null;
+            }
+
+            return _slots[index];
+        }
+
+        internal bool SetAt(int index, T? value)
+        {
+            if (index < 0 || index >= _slots.Count)
+            {
+                return false;
+            }
+
+            _slots[index] = value;
+            return true;
+        }
+
         internal IReadOnlyList<T> GetLiveObjects()
         {
-            List<T> result = new();
-            for (int i = 0; i < _slots.Count; i++)
+            List<T> result = [];
+
+            for (int i = 0; i < HighWaterMark; i++)
             {
-                T? value = _slots[i];
-                if (value != null)
+                T? entry = _slots[i];
+                if (entry != null)
                 {
-                    result.Add(value);
+                    result.Add(entry);
                 }
             }
 
@@ -104,6 +128,46 @@ namespace Gedx8MusicDriver.Core
             HighWaterMark = 0;
         }
 
+        internal void EnsureGrowth100022C0()
+        {
+            int currentCapacity = _slots.Count;
+            int delta;
+
+            if (currentCapacity > 0x40)
+            {
+                delta = (currentCapacity + (currentCapacity & 0x3)) >> 2;
+            }
+            else if (currentCapacity <= 8)
+            {
+                delta = 4;
+            }
+            else
+            {
+                delta = 0x10;
+            }
+
+            int targetCapacity = currentCapacity + delta;
+            if (targetCapacity <= currentCapacity)
+            {
+                return;
+            }
+
+            EnsureCapacityExact10002330(targetCapacity);
+        }
+
+        internal void EnsureCapacityExact10002330(int targetCapacity)
+        {
+            if (targetCapacity <= _slots.Count)
+            {
+                return;
+            }
+
+            while (_slots.Count < targetCapacity)
+            {
+                _slots.Add(null);
+            }
+        }
+
         private int FindFirstFreeIndex()
         {
             for (int i = 0; i < _slots.Count; i++)
@@ -115,37 +179,6 @@ namespace Gedx8MusicDriver.Core
             }
 
             return -1;
-        }
-
-        private void Grow()
-        {
-            int current = _slots.Count;
-            int delta = current > 0x40 ? ((current + (current & 0x3)) >> 2) : (current <= 8 ? 4 : 0x0C);
-            int target = current + Math.Max(4, delta);
-            EnsureCapacity(target);
-        }
-
-        private void EnsureCapacity(int target)
-        {
-            while (_slots.Count < target)
-            {
-                _slots.Add(null);
-            }
-        }
-
-        private void TrimHighWaterMark()
-        {
-            int highWaterMark = 0;
-            for (int i = _slots.Count - 1; i >= 0; i--)
-            {
-                if (_slots[i] != null)
-                {
-                    highWaterMark = i + 1;
-                    break;
-                }
-            }
-
-            HighWaterMark = highWaterMark;
         }
     }
 }
