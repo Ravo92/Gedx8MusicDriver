@@ -15,17 +15,6 @@ Only code that can be tied directly to the DLL wrapper layer is kept here:
 - the DirectMusic loader search-directory preparation path
 - the directly observed top-level wrapper methods from the assembly around `10001920` through `100022B0`
 
-## Removed from the previous managed model
-
-The following project-local helpers were intentionally removed because they are not direct DLL code:
-
-- `CulturesSegmentCatalog`
-- `Gedx8LoadRequest`
-- `Gedx8QueryMode`
-- `Gedx8QueryResult`
-- the earlier high-level dictionary-based property model
-- the earlier three-table managed reinterpretation of instance state
-
 ## Notes
 
 Several deep internal functions (`sub_10003D00`, `sub_10003890`, `sub_10003F00`, and similar) are still only partially understood.
