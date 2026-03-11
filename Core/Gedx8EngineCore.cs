@@ -52,6 +52,13 @@ namespace Gedx8MusicDriver.Core
             SynthInitConfig = new Gedx8SynthInitConfig(0x28, config.SampleRate, config.Config);
             IsSynthInitialized = true;
             _value00 = 0;
+            _value04 = 0;
+            _value08 = 0;
+            _value1B8 = 0;
+            _value1BC = 0;
+
+            SetRuntimeModeFields10002380(0, config.Config, 1);
+            SetCurrentObject10002380(this);
             return true;
         }
 
@@ -69,6 +76,12 @@ namespace Gedx8MusicDriver.Core
 
             _value04 = value0;
             _value08 = value1;
+
+            if (_value1C0 == null)
+            {
+                _value1C0 = this;
+            }
+
             return true;
         }
 
@@ -146,6 +159,12 @@ namespace Gedx8MusicDriver.Core
 
             _loaderContext = context;
             _value1B0 = 2;
+            _value1C4 = 1;
+            if (_value1C0 == null)
+            {
+                _value1C0 = this;
+            }
+
             return true;
         }
 
@@ -191,7 +210,7 @@ namespace Gedx8MusicDriver.Core
             switch (kind)
             {
                 case Gedx8ObjectKind.Composite:
-                    loadedObject.Sub10004120(0, loaderMode, resolvedPath, this, resolvedPath, effectiveSearchDirectory, 0, 0, 0, null);
+                    loadedObject.Sub10004120(0, loaderMode, resolvedPath, this, resolvedPath, effectiveSearchDirectory, 1, 1, 1, new uint[] { 0 });
                     break;
 
                 case Gedx8ObjectKind.ThinType1:
@@ -206,6 +225,8 @@ namespace Gedx8MusicDriver.Core
                     return null;
             }
 
+            SetRuntimeModeFields10002380(loaderMode, SynthInitConfig.Config, 1);
+            SetCurrentObject10002380(loadedObject);
             return loadedObject;
         }
 
@@ -248,6 +269,7 @@ namespace Gedx8MusicDriver.Core
             }
 
             _value1BC = selection;
+            _value1B0 = mode;
             return true;
         }
 
@@ -260,7 +282,7 @@ namespace Gedx8MusicDriver.Core
             }
 
             selection = _value1BC;
-            return true;
+            return _value1C0 != null;
         }
 
         internal bool DispatchProperty(int selector, int value, bool setMode, out int storedValue)

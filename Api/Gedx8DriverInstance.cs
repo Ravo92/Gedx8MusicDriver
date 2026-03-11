@@ -1,4 +1,5 @@
 using Gedx8MusicDriver.Core;
+using Gedx8MusicDriver.Interop;
 using Gedx8MusicDriver.Models;
 
 namespace Gedx8MusicDriver.Api
@@ -38,8 +39,10 @@ namespace Gedx8MusicDriver.Api
 
         internal static Gedx8DriverInstance? Sub100013F0Create(Gedx8GlobalRegistry globalRegistry)
         {
-            Gedx8DriverInstance instance = new(globalRegistry);
-            instance.ActiveByte00 = 1;
+            Gedx8DriverInstance instance = new(globalRegistry)
+            {
+                ActiveByte00 = 1
+            };
             return instance;
         }
 
@@ -89,7 +92,7 @@ namespace Gedx8MusicDriver.Api
                 return false;
             }
 
-            _slotTable08.Add(loadedObject);
+            RegisterLoadedObject10001990(loadedObject);
             return true;
         }
 
@@ -108,13 +111,7 @@ namespace Gedx8MusicDriver.Api
                 return false;
             }
 
-            int index = _slotTable08.IndexOf(loadedObject);
-            if (index >= 0)
-            {
-                loadedObject.Deactivate();
-                _slotTable08.RemoveAt(index);
-            }
-
+            RemoveLoadedObjectFromTable0810001AD0(loadedObject);
             return true;
         }
 
@@ -216,13 +213,7 @@ namespace Gedx8MusicDriver.Api
                 return false;
             }
 
-            int index = _slotTable08.IndexOf(loadedObject);
-            if (index >= 0)
-            {
-                loadedObject.Deactivate();
-                _slotTable08.RemoveAt(index);
-            }
-
+            RemoveLoadedObjectFromTable0810001AD0(loadedObject);
             return true;
         }
 
@@ -274,15 +265,12 @@ namespace Gedx8MusicDriver.Api
                 return false;
             }
 
-            loadedObject.ReleaseThinObject10003C30(false);
-
-            int index = _slotTable08.IndexOf(loadedObject);
-            if (index >= 0)
+            if (!loadedObject.ReleaseThinObject10003C30(false))
             {
-                loadedObject.Deactivate();
-                _slotTable08.RemoveAt(index);
+                return false;
             }
 
+            RemoveLoadedObjectFromTable0810001AD0(loadedObject);
             return true;
         }
 
@@ -357,6 +345,23 @@ namespace Gedx8MusicDriver.Api
             _disposed = true;
         }
 
+        private void RegisterLoadedObject10001990(Gedx8LoadedObject loadedObject)
+        {
+            _slotTable08.Add(loadedObject);
+        }
+
+        private void RemoveLoadedObjectFromTable0810001AD0(Gedx8LoadedObject loadedObject)
+        {
+            int index = _slotTable08.IndexOf(loadedObject);
+            if (index >= 0)
+            {
+                loadedObject.Deactivate();
+                _slotTable08.RemoveAt(index);
+            }
+
+            Gedx8Exports.NotifyLoadedObjectDestroyed(loadedObject);
+        }
+
         private void DestroyBlock0C100010D0()
         {
             Gedx8Block08_10003CC0? block0C = _block0C;
@@ -406,6 +411,7 @@ namespace Gedx8MusicDriver.Api
                 DestroyTable04Entry100010D0(loadedObject);
                 loadedObject.Deactivate();
                 _slotTable04.RemoveAt(index);
+                Gedx8Exports.NotifyLoadedObjectDestroyed(loadedObject);
             }
         }
 
@@ -422,6 +428,7 @@ namespace Gedx8MusicDriver.Api
                 DestroyTable08Entry100010D0(loadedObject);
                 loadedObject.Deactivate();
                 _slotTable08.RemoveAt(index);
+                Gedx8Exports.NotifyLoadedObjectDestroyed(loadedObject);
             }
         }
 

@@ -30,6 +30,11 @@ namespace Gedx8MusicDriver.Core
 
         internal void Sub10001090()
         {
+            if (IsBootstrapped)
+            {
+                Sub100010D0();
+            }
+
             Sub100013D0();
             _instances.EnsureCapacityExact10002330(1);
             _instances.Clear();
@@ -52,6 +57,7 @@ namespace Gedx8MusicDriver.Core
                 }
 
                 instance.Sub100010D0DestroyContents();
+                Gedx8Exports.NotifyDriverDestroyed(instance);
                 _instances.RemoveAt(index);
             }
 
@@ -92,6 +98,7 @@ namespace Gedx8MusicDriver.Core
                 }
 
                 candidate.Sub10001630DestroyContents();
+                Gedx8Exports.NotifyDriverDestroyed(candidate);
                 _instances.RemoveAt(index);
                 return true;
             }

@@ -5,8 +5,15 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <AssemblyName>Gedx8MusicDriver</AssemblyName>
+    <AssemblyName>gedx8musicdrv</AssemblyName>
     <RootNamespace>Gedx8MusicDriver</RootNamespace>
     <Platforms>x64;x86</Platforms>
+
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <SelfContained>true</SelfContained>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols>false</StripSymbols>
   </PropertyGroup>
 </Project>
