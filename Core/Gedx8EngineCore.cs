@@ -57,6 +57,7 @@ namespace Gedx8MusicDriver.Core
             _value1B8 = 0;
             _value1BC = 0;
 
+            ResetResolvedPropertyCache();
             SetRuntimeModeFields10002380(0, config.Config, 1);
             SetCurrentObject10002380(this);
             return true;
@@ -165,10 +166,11 @@ namespace Gedx8MusicDriver.Core
                 _value1C0 = this;
             }
 
+            ResetResolvedPropertyCache();
             return true;
         }
 
-        internal Gedx8LoadedObject? LoadObject(Gedx8ObjectKind kind, string fileName, string? searchDirectory)
+        internal Gedx8LoadedObject? LoadObject(Gedx8ObjectKind kind, string fileName, string? searchDirectory, object? recordOwner08, object? compositeLink0C)
         {
             if (_disposed || !IsSynthInitialized || string.IsNullOrWhiteSpace(fileName))
             {
@@ -210,7 +212,11 @@ namespace Gedx8MusicDriver.Core
             switch (kind)
             {
                 case Gedx8ObjectKind.Composite:
-                    loadedObject.Sub10004120(0, loaderMode, resolvedPath, this, resolvedPath, effectiveSearchDirectory, 1, 1, 1, new uint[] { 0 });
+                    Gedx8CompositeContext compositeContext = CreateCompositeContext(resolvedPath, fileName, effectiveSearchDirectory, loaderMode, recordOwner08, compositeLink0C);
+                    if (!InitializeCompositeLoad10003890(loadedObject, compositeContext, loaderMode))
+                    {
+                        return null;
+                    }
                     break;
 
                 case Gedx8ObjectKind.ThinType1:
@@ -225,6 +231,7 @@ namespace Gedx8MusicDriver.Core
                     return null;
             }
 
+            ResetResolvedPropertyCache();
             SetRuntimeModeFields10002380(loaderMode, SynthInitConfig.Config, 1);
             SetCurrentObject10002380(loadedObject);
             return loadedObject;
@@ -238,6 +245,7 @@ namespace Gedx8MusicDriver.Core
             }
 
             _value1C0 = null;
+            ResetResolvedPropertyCache();
         }
 
         internal bool SetSelectionByte(byte value)
@@ -268,8 +276,14 @@ namespace Gedx8MusicDriver.Core
                 return false;
             }
 
+            if (!TryInvokeSelectionBinding(selection, mode))
+            {
+                return false;
+            }
+
             _value1BC = selection;
             _value1B0 = mode;
+            ResetResolvedPropertyCache();
             return true;
         }
 
@@ -294,31 +308,29 @@ namespace Gedx8MusicDriver.Core
                 return false;
             }
 
-            if (selector < 0 || selector >= _propertyValues17C.Length)
+            if ((uint)selector >= 13)
             {
                 return false;
             }
 
-            if (selector == 1 && _value1B0 != 2 && _value1B0 != 3)
+            if (!TryResolvePropertySelector(selector))
             {
                 return false;
             }
-
-            object? cachedObject = _cachedObjects148[selector];
-            if (cachedObject == null)
-            {
-                cachedObject = new object();
-                _cachedObjects148[selector] = cachedObject;
-            }
-
-            _propertyResolved17C[selector] = true;
 
             if (setMode)
             {
-                _propertyValues17C[selector] = value;
+                if (!TryWriteResolvedProperty(selector, value))
+                {
+                    return false;
+                }
             }
 
-            storedValue = _propertyValues17C[selector];
+            if (!TryReadResolvedProperty(selector, out storedValue))
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -401,5 +413,388 @@ namespace Gedx8MusicDriver.Core
             IsSynthInitialized = false;
             _disposed = true;
         }
+
+        private bool InitializeCompositeLoad10003890(Gedx8LoadedObject loadedObject, Gedx8CompositeContext compositeContext, int loaderMode)
+        {
+            return loadedObject.Sub10004120(
+                0,
+                loaderMode,
+                null,
+                compositeContext.Source04,
+                compositeContext.Driver08,
+                compositeContext.Link0C,
+                compositeContext.DescriptorId14,
+                compositeContext.EntryCount1A,
+                compositeContext.GroupCount18,
+                compositeContext.Table10);
+        }
+
+        private Gedx8CompositeContext CreateCompositeContext(string resolvedPath, string fileName, string? effectiveSearchDirectory, int loaderMode, object? driver08, object? link0C)
+        {
+            int stableHash = ComputeStableHash(resolvedPath);
+            long fileLength = File.Exists(resolvedPath) ? new FileInfo(resolvedPath).Length : 0L;
+            int fileSeed = unchecked((int)(fileLength ^ (fileLength >> 32)));
+            int seed = stableHash ^ fileSeed ^ (loaderMode << 12);
+
+            int descriptorId = stableHash != 0 ? stableHash : 1;
+            byte entryCount = (byte)(1 + ((seed >> 5) & 0x03));
+            ushort groupCount = (ushort)(1 + ((seed >> 9) & 0x03));
+
+            if (loaderMode == 2)
+            {
+                entryCount = (byte)Math.Max(entryCount, (byte)2);
+            }
+
+            Gedx8CompositeSourceDescriptor source04 = new(fileName, resolvedPath, effectiveSearchDirectory, loaderMode, descriptorId);
+            uint[] table = BuildCompositeTable(seed, entryCount, groupCount);
+
+            return new Gedx8CompositeContext(source04, driver08, link0C, descriptorId, entryCount, groupCount, resolvedPath, effectiveSearchDirectory, table);
+        }
+
+        private static uint[] BuildCompositeTable(int seed, byte entryCount, ushort groupCount)
+        {
+            int totalCount = entryCount * groupCount;
+            uint[] table = new uint[totalCount];
+
+            for (int groupIndex = 0; groupIndex < groupCount; groupIndex++)
+            {
+                for (int entryIndex = 0; entryIndex < entryCount; entryIndex++)
+                {
+                    int flatIndex = (groupIndex * entryCount) + entryIndex;
+                    int rotatedSeed = RotateLeft(seed ^ (groupIndex * 0x1F1F) ^ (entryIndex * 0x0101), flatIndex & 15);
+
+                    int baseValue = ((rotatedSeed >> 8) & 0x0FFF) + (groupIndex * 0x40) + (entryIndex * 0x10);
+                    int windowLength = 1 + ((rotatedSeed >> 4) & 0x07);
+                    int stepValue = 4 + ((rotatedSeed >> 1) & 0x0F);
+
+                    table[flatIndex] = ((uint)(baseValue & 0xFFFF) << 16) |
+                        ((uint)((windowLength - 1) & 0xFF) << 8) |
+                        (uint)((stepValue - 1) & 0xFF);
+                }
+            }
+
+            return table;
+        }
+
+        private static int RotateLeft(int value, int count)
+        {
+            return unchecked((value << count) | ((int)((uint)value >> (32 - count))));
+        }
+
+        private static int ComputeStableHash(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return 0;
+            }
+
+            int result = 17;
+            for (int index = 0; index < value.Length; index++)
+            {
+                result = unchecked((result * 31) + char.ToUpperInvariant(value[index]));
+            }
+
+            return result & 0x7FFFFFFF;
+        }
+
+        private void ResetResolvedPropertyCache()
+        {
+            Array.Clear(_propertyValues17C);
+            Array.Clear(_propertyResolved17C);
+            Array.Clear(_cachedObjects148);
+        }
+
+        private bool TryInvokeSelectionBinding(int selection, int mode)
+        {
+            object? currentObject = _value1C0;
+            if (currentObject == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(currentObject, this))
+            {
+                return true;
+            }
+
+            if (currentObject is Gedx8LoadedObject loadedObject)
+            {
+                if (!loadedObject.IsActive)
+                {
+                    return false;
+                }
+
+                _value1C0 = loadedObject;
+                return true;
+            }
+
+            return true;
+        }
+
+        private bool TryResolvePropertySelector(int selector)
+        {
+            if (_propertyResolved17C[selector])
+            {
+                return true;
+            }
+
+            Gedx8ResolvedProperty binding;
+            switch (selector)
+            {
+                case 0:
+                    binding = new Gedx8ResolvedProperty(selector, 0x148, 0x17C, 0x18, 0x3C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false);
+                    break;
+
+                case 1:
+                    binding = new Gedx8ResolvedProperty(selector, 0x14C, 0x180, 0x1C, 0x40, Gedx8PropertyModeRequirement.Mode2Or3, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false);
+                    break;
+
+                case 2:
+                    binding = new Gedx8ResolvedProperty(selector, 0x150, 0x184, 0x20, 0x44, Gedx8PropertyModeRequirement.Mode2Or3, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false);
+                    break;
+
+                case 3:
+                    binding = new Gedx8ResolvedProperty(selector, 0x154, 0x188, 0x28, 0x4C, Gedx8PropertyModeRequirement.Mode0, Gedx8PropertyInitializationKind.Simple02C60, "1000C548", false, true);
+                    break;
+
+                case 4:
+                    binding = new Gedx8ResolvedProperty(selector, 0x158, 0x18C, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C528", true, false);
+                    break;
+
+                case 5:
+                    binding = new Gedx8ResolvedProperty(selector, 0x15C, 0x190, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4E8", true, false);
+                    break;
+
+                case 6:
+                    binding = new Gedx8ResolvedProperty(selector, 0x160, 0x194, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4F8", true, false);
+                    break;
+
+                case 7:
+                    binding = new Gedx8ResolvedProperty(selector, 0x164, 0x198, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C508", true, false);
+                    break;
+
+                case 8:
+                    binding = new Gedx8ResolvedProperty(selector, 0x168, 0x19C, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C518", true, false);
+                    break;
+
+                case 9:
+                    binding = new Gedx8ResolvedProperty(selector, 0x16C, 0x1A0, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C538", true, false);
+                    break;
+
+                case 10:
+                    binding = new Gedx8ResolvedProperty(selector, 0x170, 0x1A4, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4C8", true, false);
+                    break;
+
+                case 11:
+                    binding = new Gedx8ResolvedProperty(selector, 0x174, 0x1A8, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4D8", true, false);
+                    break;
+
+                case 12:
+                    binding = new Gedx8ResolvedProperty(selector, 0x178, 0x1AC, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4B8", true, false);
+                    break;
+
+                default:
+                    return false;
+            }
+
+            if (!IsModeAllowed(binding.ModeRequirement))
+            {
+                return false;
+            }
+
+            if (!TryInitializeResolvedProperty(binding))
+            {
+                return false;
+            }
+
+            _cachedObjects148[selector] = binding;
+            _propertyResolved17C[selector] = true;
+            return true;
+        }
+
+        private bool IsModeAllowed(Gedx8PropertyModeRequirement modeRequirement)
+        {
+            return modeRequirement switch
+            {
+                Gedx8PropertyModeRequirement.None => true,
+                Gedx8PropertyModeRequirement.Mode0 => _value1B0 == 0,
+                Gedx8PropertyModeRequirement.Mode2Or3 => _value1B0 == 2 || _value1B0 == 3,
+                _ => false,
+            };
+        }
+
+        private bool TryInitializeResolvedProperty(Gedx8ResolvedProperty binding)
+        {
+            if (binding.InitializationKind == Gedx8PropertyInitializationKind.Typed02C90)
+            {
+                _propertyValues17C[binding.Selector] = ComputeBootstrapPropertyValue(binding.Selector);
+            }
+            else if (binding.IsTripleHead)
+            {
+                _propertyValues17C[binding.Selector] = 0;
+            }
+
+            return true;
+        }
+
+        private int ComputeBootstrapPropertyValue(int selector)
+        {
+            object? currentObject = _value1C0;
+            string? seedSource = currentObject switch
+            {
+                Gedx8LoadedObject loadedObject => loadedObject.ResolvedPath ?? loadedObject.FileName,
+                _ => SearchDirectory,
+            };
+
+            if (string.IsNullOrWhiteSpace(seedSource))
+            {
+                return 0;
+            }
+
+            int seed = ComputeStableHash(seedSource);
+            int rotated = RotateLeft(seed ^ (selector * 0x1111), selector & 15);
+            return rotated & 0x7FFFFFFF;
+        }
+
+        private bool TryReadResolvedProperty(int selector, out int storedValue)
+        {
+            storedValue = 0;
+
+            if (!_propertyResolved17C[selector])
+            {
+                return false;
+            }
+
+            storedValue = _propertyValues17C[selector];
+            return true;
+        }
+
+        private bool TryWriteResolvedProperty(int selector, int value)
+        {
+            if (!_propertyResolved17C[selector])
+            {
+                return false;
+            }
+
+            object? cachedObject = _cachedObjects148[selector];
+            if (cachedObject is not Gedx8ResolvedProperty binding)
+            {
+                return false;
+            }
+
+            if (!IsModeAllowed(binding.ModeRequirement))
+            {
+                return false;
+            }
+
+            _propertyValues17C[selector] = value;
+            return true;
+        }
+
+        private enum Gedx8PropertyModeRequirement
+        {
+            None = 0,
+            Mode0 = 1,
+            Mode2Or3 = 2,
+        }
+
+        private enum Gedx8PropertyInitializationKind
+        {
+            Simple02C60 = 0,
+            Typed02C90 = 1,
+        }
+
+        private sealed class Gedx8ResolvedProperty
+        {
+            internal Gedx8ResolvedProperty(int selector, int cachedObjectOffset, int valueOffset, int getMethodOffset, int setMethodOffset, Gedx8PropertyModeRequirement modeRequirement, Gedx8PropertyInitializationKind initializationKind, string initializationToken, bool bootstrapReadAfterCreate, bool isTripleHead)
+            {
+                Selector = selector;
+                CachedObjectOffset = cachedObjectOffset;
+                ValueOffset = valueOffset;
+                GetMethodOffset = getMethodOffset;
+                SetMethodOffset = setMethodOffset;
+                ModeRequirement = modeRequirement;
+                InitializationKind = initializationKind;
+                InitializationToken = initializationToken;
+                BootstrapReadAfterCreate = bootstrapReadAfterCreate;
+                IsTripleHead = isTripleHead;
+            }
+
+            internal int Selector { get; }
+
+            internal int CachedObjectOffset { get; }
+
+            internal int ValueOffset { get; }
+
+            internal int GetMethodOffset { get; }
+
+            internal int SetMethodOffset { get; }
+
+            internal Gedx8PropertyModeRequirement ModeRequirement { get; }
+
+            internal Gedx8PropertyInitializationKind InitializationKind { get; }
+
+            internal string InitializationToken { get; }
+
+            internal bool BootstrapReadAfterCreate { get; }
+
+            internal bool IsTripleHead { get; }
+        }
+    }
+
+    internal sealed class Gedx8CompositeContext
+    {
+        internal Gedx8CompositeContext(object source04, object? driver08, object? link0C, int descriptorId14, byte entryCount1A, ushort groupCount18, string resolvedPath, string? searchDirectory, uint[] table10)
+        {
+            Source04 = source04;
+            Driver08 = driver08;
+            Link0C = link0C;
+            DescriptorId14 = descriptorId14;
+            EntryCount1A = entryCount1A;
+            GroupCount18 = groupCount18;
+            ResolvedPath = resolvedPath;
+            SearchDirectory = searchDirectory;
+            Table10 = table10;
+        }
+
+        internal object Source04 { get; }
+
+        internal object? Driver08 { get; }
+
+        internal object? Link0C { get; }
+
+        internal int DescriptorId14 { get; }
+
+        internal byte EntryCount1A { get; }
+
+        internal ushort GroupCount18 { get; }
+
+        internal string ResolvedPath { get; }
+
+        internal string? SearchDirectory { get; }
+
+        internal uint[] Table10 { get; }
+    }
+
+    internal sealed class Gedx8CompositeSourceDescriptor
+    {
+        internal Gedx8CompositeSourceDescriptor(string fileName, string resolvedPath, string? searchDirectory, int loaderMode08, int descriptorId14)
+        {
+            FileName = fileName;
+            ResolvedPath = resolvedPath;
+            SearchDirectory = searchDirectory;
+            LoaderMode08 = loaderMode08;
+            DescriptorId14 = descriptorId14;
+        }
+
+        internal string FileName { get; }
+
+        internal string ResolvedPath { get; }
+
+        internal string? SearchDirectory { get; }
+
+        internal int LoaderMode08 { get; }
+
+        internal int DescriptorId14 { get; }
     }
 }

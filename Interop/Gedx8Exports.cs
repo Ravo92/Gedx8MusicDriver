@@ -144,7 +144,7 @@ namespace Gedx8MusicDriver.Interop
                     Slot54_10002010 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot54_10002010,
                     Slot58_100020D0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot58_100020D0,
                     Slot5C_100020F0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, byte>)&Slot5C_100020F0,
-                    Slot60_10002110 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int, int, IntPtr, byte>)&Slot60_10002110,
+                    Slot60_10002110 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int, IntPtr, byte>)&Slot60_10002110,
                     Slot64_10002180 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int, int, IntPtr, byte>)&Slot64_10002180,
                     Slot68_100021F0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot68_100021F0,
                     Slot6C_100022B0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot6C_100022B0,
@@ -511,18 +511,11 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot60_10002110(IntPtr instanceHandle, IntPtr loadedObjectHandle, int mode, int value, IntPtr resultOut)
+        private static byte Slot60_10002110(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr queryContextPointer, int mode, IntPtr queryArgumentPointer)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            if (instance == null || loadedObject == null || resultOut == IntPtr.Zero)
-            {
-                return 0;
-            }
-
-            bool result = instance.Method10002110(loadedObject, mode, value, out string? textResult);
-            Marshal.WriteIntPtr(resultOut, loadedObject.StoreThinType2QueryForExport(textResult));
-            return ToNativeBool(result);
+            return ToNativeBool(instance != null && loadedObject != null && instance.Method10002110(loadedObject, queryContextPointer, mode, queryArgumentPointer));
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]

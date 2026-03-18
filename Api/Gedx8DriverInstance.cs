@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Gedx8MusicDriver.Core;
 using Gedx8MusicDriver.Interop;
 using Gedx8MusicDriver.Models;
@@ -86,7 +87,7 @@ namespace Gedx8MusicDriver.Api
         {
             ThrowIfDisposed();
 
-            loadedObject = _engine10.LoadObject(kind, fileName, searchDirectory);
+            loadedObject = _engine10.LoadObject(kind, fileName, searchDirectory, this, _block10);
             if (loadedObject == null)
             {
                 return false;
@@ -229,16 +230,21 @@ namespace Gedx8MusicDriver.Api
             return loadedObject.TryThinType2Open03EB0(name);
         }
 
-        internal bool Method10002110(Gedx8LoadedObject loadedObject, int mode, int value, out string? result)
+        internal bool Method10002110(Gedx8LoadedObject loadedObject, IntPtr queryContextPointer, int mode, IntPtr queryArgumentPointer)
         {
             ThrowIfDisposed();
 
-            result = null;
+            string? name = Marshal.PtrToStringAnsi(queryArgumentPointer);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return false;
+            }
+
             return mode switch
             {
-                0 => loadedObject.TryThinType2Query03F00(mode, value, out result),
-                1 => loadedObject.TryThinType2Query03F50(mode, value, out result),
-                2 => loadedObject.TryThinType2Query03FA0(mode, value, out result),
+                0 => loadedObject.TryThinType2Query03F00(queryContextPointer, name),
+                1 => loadedObject.TryThinType2Query03F50(queryContextPointer, name),
+                2 => loadedObject.TryThinType2Query03FA0(queryArgumentPointer, name),
                 _ => false,
             };
         }
@@ -347,6 +353,7 @@ namespace Gedx8MusicDriver.Api
 
         private void RegisterLoadedObject10001990(Gedx8LoadedObject loadedObject)
         {
+            loadedObject.Activate();
             _slotTable08.Add(loadedObject);
         }
 
