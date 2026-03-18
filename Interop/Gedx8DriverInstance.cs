@@ -1,9 +1,8 @@
 using System.Runtime.InteropServices;
 using Gedx8MusicDriver.Core;
-using Gedx8MusicDriver.Interop;
 using Gedx8MusicDriver.Models;
 
-namespace Gedx8MusicDriver.Api
+namespace Gedx8MusicDriver.Interop
 {
     internal sealed class Gedx8DriverInstance : IDisposable
     {

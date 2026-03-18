@@ -1,4 +1,3 @@
-using Gedx8MusicDriver.Api;
 using Gedx8MusicDriver.Interop;
 
 namespace Gedx8MusicDriver.Core

@@ -27,13 +27,43 @@ Implemented slots in the current model:
 - `+0x7C` / `+0x80` / `+0x84` / `+0x88` / `+0x90` thin type-2 helper paths
 - `+0x94` stub returning failure / false
 
-## New facts from the large x32dbg trace
+## New facts from the latest traces
 
-The new trace tightens the understanding of the thin type-2 configure/query area.
+### The recent `.sgt` map-load trace went through the composite branch
+
+The latest runtime trace was triggered by loading a `.sgt` file for map music playback.
+Even though the file type suggested a thin-path candidate at first glance, the branch discriminator inside `10003890` went to the `descriptor[0] == 0` path.
+That means this concrete `.sgt` load used the composite construction path rooted at `10003B1D` / `10004120`, not the thin kind `1` / `2` branches.
+
+### Thin kind `1` / `2` construction inside `10003890` is now structurally resolved
+
+The disassembly around `10003A2B` and `10003AAD` now shows the native thin-object construction shape clearly.
+
+#### Thin kind `2`
+
+- loader helper call uses static token block `1000C218`
+- on success an inner object of size `0x0C` is allocated
+- `sub_10002D30` writes:
+  - `inner + 0x04 = native loader result object`
+  - `inner + 0x08 = [esi + 0x0C]`
+- then an outer wrapper of size `0x10` is allocated and filled as:
+  - `outer + 0x04 = 2`
+  - `outer + 0x08 = loader mode`
+  - `outer + 0x0C = inner`
+
+#### Thin kind `1`
+
+- same native layout as thin kind `2`
+- loader helper call uses static token block `1000C268`
+- the outer wrapper differs only by:
+  - `outer + 0x04 = 1`
+
+So the thin kind split is primarily a different static loader token plus a different outer kind value.
+The inner object shape itself is shared.
 
 ### `+0x88` (`10002180`) is not just a simple key/value setter
 
-The trace shows a generic linked-list record store behind the dispatcher:
+The earlier large trace already showed a generic linked-list record store behind the dispatcher:
 
 - the list head is at driver offset `+0x104`
 - each node is `0x1C` bytes large
@@ -79,7 +109,8 @@ The reverse project is now mostly blocked by deep inner semantics, not by missin
 ### Still needs x32dbg/runtime confirmation
 
 - exact inner COM behavior of `sub_10003D00`
-- exact thin kind `1` / `2` object construction semantics inside `sub_10003890`
+- exact semantic identity of the thin inner slot `+0x04` object returned by the native loader call
+- exact method semantics behind the thin inner object calls used by `10002D50`, `10002D70`, `10003EB0`, `10003F00`, `10003F50`, and `10003FA0`
 - exact metadata meaning of the composite table/state fields created by `10004120` and `10004670`
 - real DMIME semantics of `10004250`, `100042C0`, and `10004490`
 - full meaning of the lazily created selector helper objects behind `10002580`
@@ -88,9 +119,16 @@ The reverse project is now mostly blocked by deep inner semantics, not by missin
 - exact meaning of the lock-protected callback/refresh path guarded around offsets `+0x27C` and `+0x294`
 - confirmation whether the current aliasing of `+0x70` / `+0x74` / `+0x78` is identical in all callers
 
-## Added C# helper
+## Added / adjusted C# modeling
 
-A new helper class can now be used to model the observed generic named-record mechanism more faithfully:
+The current C# snapshot now models the native thin-object shape more explicitly:
+
+- inner thin runtime modeled as the native `0x0C` block
+- outer loaded-object wrapper modeled as the native `0x10` block
+- thin kind `1` uses static token `1000C268`
+- thin kind `2` uses static token `1000C218`
+
+A helper class can also be used to model the observed generic thin type-2 named-record mechanism more faithfully:
 
 - `Gedx8ThinType2NamedRecordStore.cs`
 

@@ -263,11 +263,17 @@ namespace Gedx8MusicDriver.Core
                     break;
 
                 case Gedx8ObjectKind.ThinType1:
-                    loadedObject.Sub10002D30(1, loaderMode, CreateThinRuntime(kind, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, recordOwner08, compositeLink0C));
+                    if (!InitializeThinType1Load10003890(loadedObject, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, compositeLink0C))
+                    {
+                        return null;
+                    }
                     break;
 
                 case Gedx8ObjectKind.ThinType2:
-                    loadedObject.Sub10002D30(2, loaderMode, CreateThinRuntime(kind, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, recordOwner08, compositeLink0C));
+                    if (!InitializeThinType2Load10003890(loadedObject, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, compositeLink0C))
+                    {
+                        return null;
+                    }
                     break;
 
                 default:
@@ -501,11 +507,22 @@ namespace Gedx8MusicDriver.Core
             return new Gedx8CompositeContext(source04, driver08, link0C, descriptorId, entryCount, groupCount, resolvedPath, effectiveSearchDirectory, table);
         }
 
-        private static Gedx8ThinRuntime CreateThinRuntime(Gedx8ObjectKind kind, string fileName, string resolvedPath, string? effectiveSearchDirectory, int loaderMode, object? owner08, object? helper0C)
+        private bool InitializeThinType1Load10003890(Gedx8LoadedObject loadedObject, string fileName, string resolvedPath, string? effectiveSearchDirectory, int loaderMode, object? nativeContext08)
         {
-            string bindingToken = kind == Gedx8ObjectKind.ThinType1 ? "10002D50" : "10003EB0";
-            int descriptorToken = ComputeStableHashStatic(fileName + "|" + resolvedPath + "|" + loaderMode.ToString());
-            return new Gedx8ThinRuntime(kind, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, bindingToken, descriptorToken, owner08, helper0C);
+            loadedObject.Sub10002D30(1, loaderMode, CreateThinRuntime(Gedx8ObjectKind.ThinType1, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, "1000C268", nativeContext08));
+            return true;
+        }
+
+        private bool InitializeThinType2Load10003890(Gedx8LoadedObject loadedObject, string fileName, string resolvedPath, string? effectiveSearchDirectory, int loaderMode, object? nativeContext08)
+        {
+            loadedObject.Sub10002D30(2, loaderMode, CreateThinRuntime(Gedx8ObjectKind.ThinType2, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, "1000C218", nativeContext08));
+            return true;
+        }
+
+        private static Gedx8ThinRuntime CreateThinRuntime(Gedx8ObjectKind kind, string fileName, string resolvedPath, string? effectiveSearchDirectory, int loaderMode, string staticBindingToken04, object? nativeContext08)
+        {
+            Gedx8ThinBindingHandle nativeObject04 = new(kind, staticBindingToken04, fileName, resolvedPath, effectiveSearchDirectory, loaderMode);
+            return new Gedx8ThinRuntime(kind, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, staticBindingToken04, nativeObject04, nativeContext08);
         }
 
         private static uint[] BuildCompositeTable(int seed, byte entryCount, ushort groupCount)

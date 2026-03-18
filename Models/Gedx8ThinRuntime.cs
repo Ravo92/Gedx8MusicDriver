@@ -2,17 +2,16 @@ namespace Gedx8MusicDriver.Models
 {
     internal sealed class Gedx8ThinRuntime
     {
-        internal Gedx8ThinRuntime(Gedx8ObjectKind kind, string fileName, string resolvedPath, string? searchDirectory, int loaderMode08, string bindingToken, int descriptorToken, object? owner08, object? helper0C)
+        internal Gedx8ThinRuntime(Gedx8ObjectKind kind, string fileName, string resolvedPath, string? searchDirectory, int loaderMode08, string staticBindingToken04, object? nativeObject04, object? nativeContext08)
         {
             Kind = kind;
             FileName = fileName;
             ResolvedPath = resolvedPath;
             SearchDirectory = searchDirectory;
             LoaderMode08 = loaderMode08;
-            BindingToken = bindingToken;
-            DescriptorToken = descriptorToken;
-            Owner08 = owner08;
-            Helper0C = helper0C;
+            StaticBindingToken04 = staticBindingToken04;
+            NativeObject04 = nativeObject04;
+            NativeContext08 = nativeContext08;
         }
 
         internal Gedx8ObjectKind Kind { get; }
@@ -25,13 +24,13 @@ namespace Gedx8MusicDriver.Models
 
         internal int LoaderMode08 { get; }
 
-        internal string BindingToken { get; }
+        internal int NativeSize0C => 0x0C;
 
-        internal int DescriptorToken { get; }
+        internal string StaticBindingToken04 { get; }
 
-        internal object? Owner08 { get; }
+        internal object? NativeObject04 { get; }
 
-        internal object? Helper0C { get; }
+        internal object? NativeContext08 { get; }
 
         internal string? LastOpenedName { get; private set; }
 
@@ -39,5 +38,30 @@ namespace Gedx8MusicDriver.Models
         {
             LastOpenedName = value;
         }
+    }
+
+    internal sealed class Gedx8ThinBindingHandle
+    {
+        internal Gedx8ThinBindingHandle(Gedx8ObjectKind kind, string staticBindingToken04, string fileName, string resolvedPath, string? searchDirectory, int loaderMode08)
+        {
+            Kind = kind;
+            StaticBindingToken04 = staticBindingToken04;
+            FileName = fileName;
+            ResolvedPath = resolvedPath;
+            SearchDirectory = searchDirectory;
+            LoaderMode08 = loaderMode08;
+        }
+
+        internal Gedx8ObjectKind Kind { get; }
+
+        internal string StaticBindingToken04 { get; }
+
+        internal string FileName { get; }
+
+        internal string ResolvedPath { get; }
+
+        internal string? SearchDirectory { get; }
+
+        internal int LoaderMode08 { get; }
     }
 }

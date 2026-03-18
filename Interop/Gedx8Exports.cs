@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Gedx8MusicDriver.Api;
 using Gedx8MusicDriver.Core;
 using Gedx8MusicDriver.Models;
 

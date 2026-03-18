@@ -60,6 +60,10 @@ namespace Gedx8MusicDriver.Models
 
         internal object? OuterInner0C => _innerObject0C;
 
+        internal object? ThinNativeObject04 => (_innerObject0C as Gedx8ThinRuntime)?.NativeObject04;
+
+        internal object? ThinNativeContext08 => (_innerObject0C as Gedx8ThinRuntime)?.NativeContext08;
+
         internal object? CompositeOwner04 => GetCompositeRuntime()?.Source04;
 
         internal object? CompositeSource08 => GetCompositeRuntime()?.Driver08;
@@ -106,6 +110,7 @@ namespace Gedx8MusicDriver.Models
 
         internal void Sub10002D30(int outerType04, int outerLoaderMode08, object? outerInner0C)
         {
+            _recordOwner08 = null;
             _loaderMode08 = outerLoaderMode08;
             _innerObject0C = outerInner0C;
             ResetCompositeRuntimeState();
