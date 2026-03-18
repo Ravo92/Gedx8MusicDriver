@@ -117,11 +117,25 @@ namespace Gedx8MusicDriver.Models
             ReleaseExportBuffers();
         }
 
-        internal bool Sub10004120(int outerType04, int outerLoaderMode08, object? outerInner0C, object? compositeSource04, object? compositeDriver08, object? compositeLink0C, int compositeHandle14, byte compositeEntryCount1A, ushort compositeGroupCount18, uint[]? compositeTable)
+        internal bool Sub10004120(int outerType04, int outerLoaderMode08, object? outerInner0C, object? compositeSource04, object? compositeDriver08, object? compositeLink0C, int compositeHandle14, byte compositeEntryCount1A, ushort compositeGroupCount18, uint[]? compositeTable, int compositeQueryValue14, int compositeDescriptorDelta00, byte compositeDescriptor04, byte compositeDescriptor05, ushort compositeDescriptor06, int compositeRequiredField2C)
         {
-            Gedx8CompositeRuntime compositeRuntime = new Gedx8CompositeRuntime(compositeSource04, compositeDriver08, compositeLink0C, outerLoaderMode08, compositeHandle14, compositeEntryCount1A, compositeGroupCount18, compositeTable);
+            Gedx8CompositeRuntime compositeRuntime = new(
+                compositeSource04,
+                compositeDriver08,
+                compositeLink0C,
+                outerLoaderMode08,
+                compositeHandle14,
+                compositeEntryCount1A,
+                compositeGroupCount18,
+                compositeTable,
+                compositeQueryValue14,
+                compositeDescriptorDelta00,
+                compositeDescriptor04,
+                compositeDescriptor05,
+                compositeDescriptor06,
+                compositeRequiredField2C);
             InitializeCompositeRecord(compositeDriver08, outerLoaderMode08, compositeRuntime);
-            return compositeRuntime.InitResult1B != 0;
+            return true;
         }
 
         internal void Sub10004170()
@@ -606,6 +620,12 @@ namespace Gedx8MusicDriver.Models
             _compositeResolveAValues["handle"] = compositeRuntime.DescriptorId14.ToString(CultureInfo.InvariantCulture);
             _compositeResolveAValues["groupcount"] = compositeRuntime.GroupCount18.ToString(CultureInfo.InvariantCulture);
             _compositeResolveAValues["entrycount"] = compositeRuntime.EntryCount1A.ToString(CultureInfo.InvariantCulture);
+            _compositeResolveAValues["queryvalue14"] = compositeRuntime.QueryValue14.ToString(CultureInfo.InvariantCulture);
+            _compositeResolveAValues["descriptor00"] = compositeRuntime.DescriptorDelta00.ToString(CultureInfo.InvariantCulture);
+            _compositeResolveAValues["descriptor04"] = compositeRuntime.DescriptorValue04.ToString(CultureInfo.InvariantCulture);
+            _compositeResolveAValues["descriptor05"] = compositeRuntime.DescriptorValue05.ToString(CultureInfo.InvariantCulture);
+            _compositeResolveAValues["descriptor06"] = compositeRuntime.DescriptorValue06.ToString(CultureInfo.InvariantCulture);
+            _compositeResolveAValues["required2c"] = compositeRuntime.RequiredField2C.ToString(CultureInfo.InvariantCulture);
 
             _compositeResolveBValues["text"] = _compositeTextValue;
             _compositeResolveBValues["value"] = _compositeTextValue;
@@ -851,7 +871,7 @@ namespace Gedx8MusicDriver.Models
 
         internal sealed class Gedx8CompositeRuntime
         {
-            internal Gedx8CompositeRuntime(object? source04, object? driver08, object? link0C, int loaderMode08, int descriptorId14, byte entryCount1A, ushort groupCount18, uint[]? table10)
+            internal Gedx8CompositeRuntime(object? source04, object? driver08, object? link0C, int loaderMode08, int descriptorId14, byte entryCount1A, ushort groupCount18, uint[]? table10, int queryValue14, int descriptorDelta00, byte descriptorValue04, byte descriptorValue05, ushort descriptorValue06, int requiredField2C)
             {
                 Source04 = source04;
                 Driver08 = driver08;
@@ -860,6 +880,12 @@ namespace Gedx8MusicDriver.Models
                 DescriptorId14 = descriptorId14;
                 EntryCount1A = entryCount1A;
                 GroupCount18 = groupCount18;
+                QueryValue14 = queryValue14;
+                DescriptorDelta00 = descriptorDelta00;
+                DescriptorValue04 = descriptorValue04;
+                DescriptorValue05 = descriptorValue05;
+                DescriptorValue06 = descriptorValue06;
+                RequiredField2C = requiredField2C;
                 InitResult1B = 0;
                 LastProbeResult = -1;
                 _cellPayloads = new Dictionary<int, byte>();
@@ -886,6 +912,18 @@ namespace Gedx8MusicDriver.Models
             internal byte EntryCount1A { get; }
 
             internal byte InitResult1B { get; private set; }
+
+            internal int QueryValue14 { get; }
+
+            internal int DescriptorDelta00 { get; }
+
+            internal byte DescriptorValue04 { get; }
+
+            internal byte DescriptorValue05 { get; }
+
+            internal ushort DescriptorValue06 { get; }
+
+            internal int RequiredField2C { get; }
 
             internal int LastForwardValue { get; set; }
 
@@ -949,8 +987,8 @@ namespace Gedx8MusicDriver.Models
                     _cellPayloads[flatIndex] = (byte)(tableCopy[flatIndex] & 0xFF);
                 }
 
-                InitResult1B = 1;
-                LastProbeResult = 1;
+                InitResult1B = RequiredField2C != 0 ? (byte)1 : (byte)0;
+                LastProbeResult = InitResult1B != 0 ? 1 : -1;
                 return true;
             }
 

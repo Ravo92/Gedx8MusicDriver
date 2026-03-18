@@ -472,7 +472,7 @@ namespace Gedx8MusicDriver.Core
 
         private bool InitializeCompositeLoad10003890(Gedx8LoadedObject loadedObject, Gedx8CompositeContext compositeContext, int loaderMode)
         {
-            return loadedObject.Sub10004120(
+            loadedObject.Sub10004120(
                 0,
                 loaderMode,
                 null,
@@ -482,7 +482,14 @@ namespace Gedx8MusicDriver.Core
                 compositeContext.DescriptorId14,
                 compositeContext.EntryCount1A,
                 compositeContext.GroupCount18,
-                compositeContext.Table10);
+                compositeContext.Table10,
+                compositeContext.DmimeState.QueryValue14,
+                compositeContext.DmimeState.Descriptor308.Delta00,
+                compositeContext.DmimeState.Descriptor308.Value04,
+                compositeContext.DmimeState.Descriptor308.Value05,
+                compositeContext.DmimeState.Descriptor308.Value06,
+                compositeContext.DmimeState.Descriptor308.RequiredField2C);
+            return true;
         }
 
         private Gedx8CompositeContext CreateCompositeContext(string resolvedPath, string fileName, string? effectiveSearchDirectory, int loaderMode, object? driver08, object? link0C)
@@ -503,8 +510,9 @@ namespace Gedx8MusicDriver.Core
 
             Gedx8CompositeSourceDescriptor source04 = new(fileName, resolvedPath, effectiveSearchDirectory, loaderMode, descriptorId);
             uint[] table = BuildCompositeTable(seed, entryCount, groupCount);
+            Gedx8CompositeDmimeState dmimeState = CreateCompositeDmimeState(fileLength);
 
-            return new Gedx8CompositeContext(source04, driver08, link0C, descriptorId, entryCount, groupCount, resolvedPath, effectiveSearchDirectory, table);
+            return new Gedx8CompositeContext(source04, driver08, link0C, descriptorId, entryCount, groupCount, resolvedPath, effectiveSearchDirectory, table, dmimeState);
         }
 
         private bool InitializeThinType1Load10003890(Gedx8LoadedObject loadedObject, string fileName, string resolvedPath, string? effectiveSearchDirectory, int loaderMode, object? nativeContext08)
@@ -523,6 +531,37 @@ namespace Gedx8MusicDriver.Core
         {
             Gedx8ThinBindingHandle nativeObject04 = new(kind, staticBindingToken04, fileName, resolvedPath, effectiveSearchDirectory, loaderMode);
             return new Gedx8ThinRuntime(kind, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, staticBindingToken04, nativeObject04, nativeContext08);
+        }
+
+        private static Gedx8CompositeDmimeState CreateCompositeDmimeState(long fileLength)
+        {
+            int queryValue14 = ComputeCompositeQueryValue14(fileLength);
+
+            // The latest runtime trace shows that the second DMIME query writes a
+            // small descriptor header (00/04/05/06) but still leaves the later
+            // gate at output + 0x2C unresolved. That unresolved field is modeled as
+            // zero here on purpose, because it is exactly what forced the early
+            // branch at 157646D9 in the observed map-music path.
+            Gedx8CompositeDmimeDescriptor descriptor308 = new(
+                Delta00: 0,
+                Value04: 0x04,
+                Value05: 0x04,
+                Value06: 0x0004,
+                RequiredField2C: 0);
+
+            return new Gedx8CompositeDmimeState(queryValue14, descriptor308);
+        }
+
+        private static int ComputeCompositeQueryValue14(long fileLength)
+        {
+            long normalized = Math.Max(fileLength, 0x15000L);
+            normalized = (normalized + 0x7FFL) & ~0x7FFL;
+            if (normalized > int.MaxValue)
+            {
+                normalized = int.MaxValue;
+            }
+
+            return unchecked((int)normalized);
         }
 
         private static uint[] BuildCompositeTable(int seed, byte entryCount, ushort groupCount)
@@ -988,7 +1027,11 @@ namespace Gedx8MusicDriver.Core
 
         private readonly record struct Gedx8CompositeSourceDescriptor(string FileName, string ResolvedPath, string? SearchDirectory, int LoaderMode, int DescriptorId);
 
-        private readonly record struct Gedx8CompositeContext(Gedx8CompositeSourceDescriptor Source04, object? Driver08, object? Link0C, int DescriptorId14, byte EntryCount1A, ushort GroupCount18, string ResolvedPath, string? SearchDirectory, uint[] Table10);
+        private readonly record struct Gedx8CompositeContext(Gedx8CompositeSourceDescriptor Source04, object? Driver08, object? Link0C, int DescriptorId14, byte EntryCount1A, ushort GroupCount18, string ResolvedPath, string? SearchDirectory, uint[] Table10, Gedx8CompositeDmimeState DmimeState);
+
+        private readonly record struct Gedx8CompositeDmimeState(int QueryValue14, Gedx8CompositeDmimeDescriptor Descriptor308);
+
+        private readonly record struct Gedx8CompositeDmimeDescriptor(int Delta00, byte Value04, byte Value05, ushort Value06, int RequiredField2C);
 
         private readonly record struct Gedx8TypedPropertyDescriptor(int EntrySize, int Selector, int CachedObjectOffset, int ValueOffset, int GetMethodOffset, int SetMethodOffset, int TokenHash, int FactoryTokenHash, int Ordinal, int DescriptorTableOffset, int FinalizeMethodOffset, int CommitMethodOffset);
 

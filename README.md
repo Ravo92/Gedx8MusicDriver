@@ -91,6 +91,38 @@ The trace shows at least these additional side effects:
 
 The exact semantic names of the static 16-byte keys passed from the game are still unresolved.
 
+### Composite DMIME descriptor setup is now better pinned down
+
+The `10004120` / `10004670` path does not just build the table-shaped composite state.
+The runtime trace now shows an additional DMIME descriptor handshake around the block rooted at `15764670`:
+
+- a first native getter call at the `15764142` site copies `inner + 0x70` into the composite record field later observed at `+0x14`
+- the first DMIME descriptor query then uses the static GUID block at `1576C318`
+- the second DMIME descriptor query uses the static GUID block at `1576C308`
+- the second query writes a small descriptor buffer starting at `output + 0x00`
+
+In the observed failing map-music path the second descriptor buffer contained at least:
+
+- `output + 0x00 = delta / offset dword`
+- `output + 0x04 = 0x04`
+- `output + 0x05 = 0x04`
+- `output + 0x06 = 0x0004`
+
+The important gate is later read as `[esp+3C]`, which is exactly `output + 0x2C`.
+When that field is `0`, the code takes the early abort at `157646D9` / `157646E0` and skips the deeper path.
+So the jump there is not suspicious: it is the correct consequence of a still-incomplete DMIME descriptor result.
+
+### Composite object construction and composite init-byte are not the same thing
+
+The latest trace also makes clear that composite object construction can still succeed even when the inner init byte stays `0`.
+The wrapper object is allocated, wrapped, and later inserted into the table path anyway; the `1B` status byte only describes whether the deeper descriptor-dependent initialization continued.
+
+The current C# model was therefore adjusted to keep those two states separate:
+
+- composite wrapper construction still succeeds when the descriptor handshake is only partially resolved
+- the composite runtime now carries explicit DMIME-descriptor state
+- the observed `output + 0x2C` gate is modeled separately from mere wrapper allocation
+
 ### The game-side names/keys are still not semantically mapped
 
 Observed static 16-byte key blocks include the values passed from addresses:
