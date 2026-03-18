@@ -1,113 +1,105 @@
-# Gedx8MusicDriver
+# Gedx8MusicDriver reverse status
 
-This update finishes the `10002580` / `10002C60` / `10002C90` block as an ASM-first reconstruction, even though the normal Cultures runtime path did not hit these slots during live testing.
+## Published wrapper surface
 
-## What changed
+The currently uploaded C# snapshot already covers the exported/native wrapper surface through method-table slot `+0x94`.
+That means there are no completely missing *published* wrapper entries left in the current DLL-facing surface.
 
-### 10002580
+Implemented slots in the current model:
 
-The selector dispatcher remains modeled as the native `0..12` jump-table path with the already confirmed lazy-slot layout:
+- `+0x00` bootstrap / global init
+- `+0x04` global destroy / registry cleanup
+- `+0x08` create driver instance
+- `+0x0C` destroy driver instance
+- `+0x10` init synthesizer
+- `+0x14` / `+0x18` / `+0x1C` synth follow-up wrappers
+- `+0x20` load cached object
+- `+0x24` / `+0x28` / `+0x2C` / `+0x30` loader and lifetime helpers
+- `+0x34` create audiopath
+- `+0x38` activate audiopath
+- `+0x3C` set audiopath volume
+- `+0x40` / `+0x44` / `+0x48` / `+0x4C` selector and property helpers
+- `+0x50` destroy audiopath
+- `+0x54` / `+0x58` / `+0x5C` playback helpers
+- `+0x60` / `+0x64` / `+0x68` composite helper/query paths
+- `+0x6C` destroy composite or segment wrapper
+- `+0x70` / `+0x78` thin type-1 helper paths
+- `+0x7C` / `+0x80` / `+0x84` / `+0x88` / `+0x90` thin type-2 helper paths
+- `+0x94` stub returning failure / false
 
-- selector `0` -> cached slot `+0x148`
-- selector `1` -> cached slot `+0x14C`
-- selector `2` -> cached slot `+0x150`
-- selector `3` -> cached slot `+0x154`
-- selectors `4..12` -> cached slots `+0x158 .. +0x178`
+## New facts from the large x32dbg trace
 
-The mode gates also stay aligned with the ASM:
-- selector `0` has no extra mode gate
-- selectors `1` and `2` require mode `2` or `3`
-- selector `3` requires mode `0`
+The new trace tightens the understanding of the thin type-2 configure/query area.
 
-The fallback write-slot behavior at `this+0x17C + selector*4` remains part of the model, but this C# side still exposes it through the simplified `DispatchProperty(...)` API rather than through raw pointer-based caller storage.
+### `+0x88` (`10002180`) is not just a simple key/value setter
 
-### 10002C60
+The trace shows a generic linked-list record store behind the dispatcher:
 
-`10002C60` is now treated as a two-token helper-creation path instead of a generic "simple create" shortcut.
+- the list head is at driver offset `+0x104`
+- each node is `0x1C` bytes large
+- observed node layout is consistent with:
+  - `+0x00` next pointer
+  - `+0x04..+0x13` a 16-byte signature/key
+  - `+0x14` payload pointer
+  - `+0x18` payload size / mode
+- when no existing entry matches, a new node is allocated, payload memory is allocated separately, the payload bytes are copied, and the node is inserted at the list head
 
-The native call shape is:
+This means the current C# thin type-2 configure model is still too flat if it only stores name/value state in dictionaries.
+A linked-list-like named record store is closer to the native behavior.
 
-- caller passes a selector token such as `1000C558` / `1000C548`
-- caller also passes the target lazy-slot address (`this+0x148` etc.)
-- `10002C60` then forwards:
-  - target slot pointer
-  - selector token
-  - `0`
-  - fixed factory token `1000C1C8`
-  - `0`
-  - `0x6000`
-  - `-5`
-  - current object at `this+0x1C0`
-  - into `call [vtbl+0x0C]`
+### There are special-case fast paths before the generic fallback
 
-The C# model now records both token layers:
+Two special signature tables are checked before falling back to generic list insertion:
 
-- selector token hash
-- fixed factory token hash for `1000C1C8`
-- target cached-slot offset
-- creation ordinal
+- one table rooted at `6B212B24`
+- one table rooted at `6B212CA4`
 
-This is still a state model, not the real COM helper behind native `+[vtbl+0x0C]`, but it now matches the observed outer ABI much more closely.
+The trace shows at least these additional side effects:
 
-### 10002C90
+- one special path updates driver offset `+0x340` using a `float` payload with range checks
+- another special path updates driver offset `+0x33C` from a 32-bit payload and also touches the lock-protected block at `+0x27C`
 
-`10002C90` is now modeled as a descriptor-table producer first and a typed helper finalizer second.
+The exact semantic names of the static 16-byte keys passed from the game are still unresolved.
 
-The native flow is reflected as:
+### The game-side names/keys are still not semantically mapped
 
-- use byte counter at `this+1`
-- compute descriptor-table entry at `this+0x04 + count*0x20`
-- write four dwords into the descriptor body
-- call `10002C60("1000C558", &localHelperSlot)`
-- call helper `+[vtbl+0x54]`
-- increment the descriptor count byte
-- call helper `+[vtbl+0x5C]`
+Observed static 16-byte key blocks include the values passed from addresses:
 
-The C# model now records for each typed selector helper:
+- `1577C2B8`
+- `1577C2C8`
+- `1577C2D8`
+- `1577C2E8`
 
-- descriptor entry size `0x20`
-- descriptor table offset (`0x124 + ordinal*0x20` model)
-- selector id
-- cached-object offset
-- backing-value offset
-- get/set method offsets
-- selector token hash
-- fixed factory token hash (`1000C1C8`)
-- finalize/commit method offsets (`+0x54` / `+0x5C`)
-- creation ordinal
+Their *behavior* is partially known from the trace, but their exact logical meaning is still not fully named.
 
-This is intentionally still not claiming full native equivalence for the helper object itself, but it is now much closer to the actual layered helper construction visible in the ASM.
+## What is still missing for a real finish
 
-## Runtime-observation status
+The reverse project is now mostly blocked by deep inner semantics, not by missing exported wrappers.
 
-The important limitation is unchanged:
+### Still needs x32dbg/runtime confirmation
 
-- `10002580`
-- `10002C60`
-- `10002C90`
+- exact inner COM behavior of `sub_10003D00`
+- exact thin kind `1` / `2` object construction semantics inside `sub_10003890`
+- exact metadata meaning of the composite table/state fields created by `10004120` and `10004670`
+- real DMIME semantics of `10004250`, `100042C0`, and `10004490`
+- full meaning of the lazily created selector helper objects behind `10002580`
+- exact query-path readback behavior for the thin type-2 named-record list behind `10002110`
+- exact semantic mapping of the special 16-byte keys used by the `+0x84` / `+0x88` dispatcher
+- exact meaning of the lock-protected callback/refresh path guarded around offsets `+0x27C` and `+0x294`
+- confirmation whether the current aliasing of `+0x70` / `+0x74` / `+0x78` is identical in all callers
 
-were **not** observed on the normal tested Cultures playback path at runtime.
+## Added C# helper
 
-So this block should currently be read as:
+A new helper class can now be used to model the observed generic named-record mechanism more faithfully:
 
-- **strong static reconstruction from ASM**
-- **not yet runtime-confirmed from the game's normal music path**
+- `Gedx8ThinType2NamedRecordStore.cs`
 
-## Remaining open points for this block
+This class mirrors the trace-visible behavior of:
 
-Still open are:
+- 16-byte signature matching
+- update-or-insert semantics
+- head insertion into a singly linked logical record chain
+- separate payload storage with explicit payload size
 
-- the real COM/helper object returned through native `10002C60`
-- the exact meaning of every dword written by native `10002C90`
-- the full semantics of helper `+[vtbl+0x54]`
-- the full semantics of helper `+[vtbl+0x5C]`
-- whether Cultures exercises this whole selector-helper path only in uncommon or unused scenarios
-
-## Best next targets
-
-With this block now statically tightened, the most productive next reverse targets remain:
-
-- `10004250`
-- `100042C0`
-- `10003D00`
-- inner COM semantics of `10003890` for kind `1/2`
+It does **not** claim that all special-case behavior is decoded already.
+It is only a stricter model of the generic fallback path that the trace clearly showed.

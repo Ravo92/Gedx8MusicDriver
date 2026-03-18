@@ -1,5 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Gedx8MusicDriver.Api;
 using Gedx8MusicDriver.Core;
 using Gedx8MusicDriver.Models;
 
@@ -77,6 +78,8 @@ namespace Gedx8MusicDriver.Interop
 
         private static readonly Dictionary<IntPtr, GCHandle> s_loadedObjectHandlesByPointer = new();
         private static readonly Dictionary<Gedx8LoadedObject, IntPtr> s_loadedObjectPointersByInstance = new(ReferenceEqualityComparer.Instance);
+        private static readonly Dictionary<IntPtr, GCHandle> s_audiopathHandlesByPointer = new();
+        private static readonly Dictionary<Gedx8Audiopath, IntPtr> s_audiopathPointersByInstance = new(ReferenceEqualityComparer.Instance);
 
         private static bool s_initialized;
 
@@ -166,8 +169,13 @@ namespace Gedx8MusicDriver.Interop
                     Slot88_10002180 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int, IntPtr, byte>)&Slot88_10002180,
                     Slot8C_10001D90_Alias2 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte, byte>)&Slot4C_10001D90,
                     Slot90_100021F0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot90_100021F0,
-                    Slot94_100022B0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot94_100022B0
+                    Slot94_100022B0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot94_100022B0,
                 };
+
+                Gedx8NativeRawInterfaceObject rawInterface = new Gedx8NativeRawInterfaceObject
+                {
+                    Entry00_10001000 = (IntPtr)(delegate* unmanaged[Stdcall]<int, int, byte>)&Sub10001000,
+                    MethodTable04 = s_methodTablePointer,
                 };
 
                 Marshal.StructureToPtr(methodTable, s_methodTablePointer, false);

@@ -1,4 +1,4 @@
-﻿using Gedx8MusicDriver.Interop;
+using Gedx8MusicDriver.Interop;
 using Gedx8MusicDriver.Models;
 
 namespace Gedx8MusicDriver.Core
@@ -8,6 +8,10 @@ namespace Gedx8MusicDriver.Core
         private readonly int[] _propertyValues17C = new int[13];
         private readonly bool[] _propertyResolved17C = new bool[13];
         private readonly object?[] _cachedObjects148 = new object?[13];
+        private readonly int[] _selector3Triple188 = new int[3];
+        private readonly int[] _typedSelectorBackings18C = new int[9];
+        private readonly Gedx8TypedPropertyDescriptor[] _typedDescriptors124 = new Gedx8TypedPropertyDescriptor[0x20];
+
         private DirectMusicLoaderContext? _loaderContext;
         private bool _disposed;
         private int _value00;
@@ -19,13 +23,12 @@ namespace Gedx8MusicDriver.Core
         private int _value1BC;
         private object? _value1C0;
         private int _value1C4;
-        private readonly int[] _selector3Triple188 = new int[3];
-        private readonly int[] _typedSelectorBackings18C = new int[9];
-        private readonly Gedx8TypedPropertyDescriptor[] _typedDescriptors124 = new Gedx8TypedPropertyDescriptor[0x20];
         private byte _typedDescriptorCount01;
         private int _simplePropertyCreateCount02C60;
         private int _typedPropertyCreateCount02C90;
         private int _lastPropertyCreateTokenHash;
+        private int _lastPropertyFactoryTokenHash;
+        private int _lastPropertyCreateTargetOffset;
         private int _lastPropertyCreateResult;
         private int _synthDescriptorSize28;
         private int _synthDescriptorMode18;
@@ -82,6 +85,8 @@ namespace Gedx8MusicDriver.Core
             _simplePropertyCreateCount02C60 = 0;
             _typedPropertyCreateCount02C90 = 0;
             _lastPropertyCreateTokenHash = 0;
+            _lastPropertyFactoryTokenHash = 0;
+            _lastPropertyCreateTargetOffset = 0;
             _lastPropertyCreateResult = 0;
 
             _synthDescriptorSize28 = 0x28;
@@ -451,6 +456,8 @@ namespace Gedx8MusicDriver.Core
             _simplePropertyCreateCount02C60 = 0;
             _typedPropertyCreateCount02C90 = 0;
             _lastPropertyCreateTokenHash = 0;
+            _lastPropertyFactoryTokenHash = 0;
+            _lastPropertyCreateTargetOffset = 0;
             _lastPropertyCreateResult = 0;
             SynthInitConfig = Gedx8SynthInitConfig.Empty;
             IsSynthInitialized = false;
@@ -494,28 +501,27 @@ namespace Gedx8MusicDriver.Core
             return new Gedx8CompositeContext(source04, driver08, link0C, descriptorId, entryCount, groupCount, resolvedPath, effectiveSearchDirectory, table);
         }
 
-        private Gedx8ThinRuntime CreateThinRuntime(Gedx8ObjectKind kind, string fileName, string resolvedPath, string? searchDirectory, int loaderMode, object? owner08, object? helper0C)
+        private static Gedx8ThinRuntime CreateThinRuntime(Gedx8ObjectKind kind, string fileName, string resolvedPath, string? effectiveSearchDirectory, int loaderMode, object? owner08, object? helper0C)
         {
-            string bindingToken = kind == Gedx8ObjectKind.ThinType1 ? "1000C268" : "1000C218";
-            int descriptorToken = kind == Gedx8ObjectKind.ThinType1 ? 1 : 2;
-            return new Gedx8ThinRuntime(kind, fileName, resolvedPath, searchDirectory, loaderMode, bindingToken, descriptorToken, owner08, helper0C);
+            string bindingToken = kind == Gedx8ObjectKind.ThinType1 ? "10002D50" : "10003EB0";
+            int descriptorToken = ComputeStableHashStatic(fileName + "|" + resolvedPath + "|" + loaderMode.ToString());
+            return new Gedx8ThinRuntime(kind, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, bindingToken, descriptorToken, owner08, helper0C);
         }
 
         private static uint[] BuildCompositeTable(int seed, byte entryCount, ushort groupCount)
         {
-            int totalCount = entryCount * groupCount;
-            uint[] table = new uint[totalCount];
+            int total = entryCount * groupCount;
+            uint[] table = new uint[total];
 
             for (int groupIndex = 0; groupIndex < groupCount; groupIndex++)
             {
                 for (int entryIndex = 0; entryIndex < entryCount; entryIndex++)
                 {
                     int flatIndex = (groupIndex * entryCount) + entryIndex;
-                    int rotatedSeed = RotateLeft(seed ^ (groupIndex * 0x1F1F) ^ (entryIndex * 0x0101), flatIndex & 15);
-
-                    int baseValue = ((rotatedSeed >> 8) & 0x0FFF) + (groupIndex * 0x40) + (entryIndex * 0x10);
-                    int windowLength = 1 + ((rotatedSeed >> 4) & 0x07);
-                    int stepValue = 4 + ((rotatedSeed >> 1) & 0x0F);
+                    int rotated = RotateLeft(seed ^ (groupIndex * 0x45D9F3B) ^ (entryIndex * 0x119DE1F3), (flatIndex % 13) + 1);
+                    int baseValue = (rotated & 0x7FFF) + (groupIndex * 0x40) + (entryIndex * 0x10);
+                    int windowLength = 1 + ((rotated >> 7) & 0x0F);
+                    int stepValue = 1 + ((rotated >> 15) & 0x0F);
 
                     table[flatIndex] = ((uint)(baseValue & 0xFFFF) << 16) |
                         ((uint)((windowLength - 1) & 0xFF) << 8) |
@@ -545,6 +551,11 @@ namespace Gedx8MusicDriver.Core
             }
 
             return result & 0x7FFFFFFF;
+        }
+
+        private static int ComputeStableHashStatic(string? value)
+        {
+            return ComputeStableHash(value);
         }
 
         private void ResetResolvedPropertyCache()
@@ -834,7 +845,7 @@ namespace Gedx8MusicDriver.Core
 
             internal bool IsInitialized { get; private set; }
 
-            internal int CurrentValue { get; private set; }
+            internal int CurrentValue { get; set; }
 
             internal int CreationOrdinal { get; private set; }
 
@@ -958,6 +969,10 @@ namespace Gedx8MusicDriver.Core
             }
         }
 
+        private readonly record struct Gedx8CompositeSourceDescriptor(string FileName, string ResolvedPath, string? SearchDirectory, int LoaderMode, int DescriptorId);
+
+        private readonly record struct Gedx8CompositeContext(Gedx8CompositeSourceDescriptor Source04, object? Driver08, object? Link0C, int DescriptorId14, byte EntryCount1A, ushort GroupCount18, string ResolvedPath, string? SearchDirectory, uint[] Table10);
+
         private readonly record struct Gedx8TypedPropertyDescriptor(int EntrySize, int Selector, int CachedObjectOffset, int ValueOffset, int GetMethodOffset, int SetMethodOffset, int TokenHash, int FactoryTokenHash, int Ordinal, int DescriptorTableOffset, int FinalizeMethodOffset, int CommitMethodOffset);
 
         private enum Gedx8PropertyModeRequirement
@@ -969,101 +984,9 @@ namespace Gedx8MusicDriver.Core
 
         private enum Gedx8PropertyInitializationKind
         {
-            Simple02C60 = 0,
-            Typed02C90 = 1,
+            None = 0,
+            Simple02C60 = 1,
+            Typed02C90 = 2,
         }
-
-        private sealed class Gedx8ResolvedProperty
-        {
-            internal Gedx8ResolvedProperty(int selector, int cachedObjectOffset, int valueOffset, int getMethodOffset, int setMethodOffset, Gedx8PropertyModeRequirement modeRequirement, Gedx8PropertyInitializationKind initializationKind, string initializationToken, bool bootstrapReadAfterCreate, bool isTripleHead)
-            {
-                Selector = selector;
-                CachedObjectOffset = cachedObjectOffset;
-                ValueOffset = valueOffset;
-                GetMethodOffset = getMethodOffset;
-                SetMethodOffset = setMethodOffset;
-                ModeRequirement = modeRequirement;
-                InitializationKind = initializationKind;
-                InitializationToken = initializationToken;
-                BootstrapReadAfterCreate = bootstrapReadAfterCreate;
-                IsTripleHead = isTripleHead;
-            }
-
-            internal int Selector { get; }
-
-            internal int CachedObjectOffset { get; }
-
-            internal int ValueOffset { get; }
-
-            internal int GetMethodOffset { get; }
-
-            internal int SetMethodOffset { get; }
-
-            internal Gedx8PropertyModeRequirement ModeRequirement { get; }
-
-            internal Gedx8PropertyInitializationKind InitializationKind { get; }
-
-            internal string InitializationToken { get; }
-
-            internal bool BootstrapReadAfterCreate { get; }
-
-            internal bool IsTripleHead { get; }
-        }
-    }
-
-    internal sealed class Gedx8CompositeContext
-    {
-        internal Gedx8CompositeContext(object source04, object? driver08, object? link0C, int descriptorId14, byte entryCount1A, ushort groupCount18, string resolvedPath, string? searchDirectory, uint[] table10)
-        {
-            Source04 = source04;
-            Driver08 = driver08;
-            Link0C = link0C;
-            DescriptorId14 = descriptorId14;
-            EntryCount1A = entryCount1A;
-            GroupCount18 = groupCount18;
-            ResolvedPath = resolvedPath;
-            SearchDirectory = searchDirectory;
-            Table10 = table10;
-        }
-
-        internal object Source04 { get; }
-
-        internal object? Driver08 { get; }
-
-        internal object? Link0C { get; }
-
-        internal int DescriptorId14 { get; }
-
-        internal byte EntryCount1A { get; }
-
-        internal ushort GroupCount18 { get; }
-
-        internal string ResolvedPath { get; }
-
-        internal string? SearchDirectory { get; }
-
-        internal uint[] Table10 { get; }
-    }
-
-    internal sealed class Gedx8CompositeSourceDescriptor
-    {
-        internal Gedx8CompositeSourceDescriptor(string fileName, string resolvedPath, string? searchDirectory, int loaderMode08, int descriptorId14)
-        {
-            FileName = fileName;
-            ResolvedPath = resolvedPath;
-            SearchDirectory = searchDirectory;
-            LoaderMode08 = loaderMode08;
-            DescriptorId14 = descriptorId14;
-        }
-
-        internal string FileName { get; }
-
-        internal string ResolvedPath { get; }
-
-        internal string? SearchDirectory { get; }
-
-        internal int LoaderMode08 { get; }
-
-        internal int DescriptorId14 { get; }
     }
 }

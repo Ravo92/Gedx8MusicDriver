@@ -844,7 +844,7 @@ namespace Gedx8MusicDriver.Models
             buffer = IntPtr.Zero;
         }
 
-        private sealed class Gedx8CompositeRuntime
+        internal sealed class Gedx8CompositeRuntime
         {
             internal Gedx8CompositeRuntime(object? source04, object? driver08, object? link0C, int loaderMode08, int descriptorId14, byte entryCount1A, ushort groupCount18, uint[]? table10)
             {
