@@ -164,10 +164,10 @@ namespace Gedx8MusicDriver.Api
             return loadedObject.TryCompositeCall04190(arg0, arg1, arg2, arg3, arg4);
         }
 
-        internal bool Method10001E70(Gedx8LoadedObject loadedObject, IntPtr rawValue)
+        internal bool Method10001E70(Gedx8LoadedObject loadedObject, string? value)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall04250(rawValue);
+            return loadedObject.TryCompositeCall04250(value);
         }
 
         internal bool Method10001E90(Gedx8LoadedObject loadedObject, out byte readyByte)
@@ -176,16 +176,16 @@ namespace Gedx8MusicDriver.Api
             return loadedObject.TryCompositeCall04280(out readyByte);
         }
 
-        internal bool Method10001EB0(Gedx8LoadedObject loadedObject, int mode, IntPtr structurePointer)
+        internal bool Method10001EB0(Gedx8LoadedObject loadedObject, string name, out string? resolvedValue)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall042C0(mode, structurePointer);
+            return loadedObject.TryCompositeCall042C0(name, out resolvedValue);
         }
 
-        internal bool Method10001EE0(Gedx8LoadedObject loadedObject, int mode, IntPtr structurePointer)
+        internal bool Method10001EE0(Gedx8LoadedObject loadedObject, string name, out string? resolvedValue)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall04490(mode, structurePointer);
+            return loadedObject.TryCompositeCall04490(name, out resolvedValue);
         }
 
         internal bool Method10001F10(Gedx8LoadedObject loadedObject, out byte value0, out byte value1)
@@ -230,11 +230,10 @@ namespace Gedx8MusicDriver.Api
             return loadedObject.TryThinType2Open03EB0(name);
         }
 
-        internal bool Method10002110(Gedx8LoadedObject loadedObject, IntPtr queryContextPointer, int mode, IntPtr queryArgumentPointer)
+        internal bool Method10002110(Gedx8LoadedObject loadedObject, string name, int mode, IntPtr payloadPointer)
         {
             ThrowIfDisposed();
 
-            string? name = Marshal.PtrToStringAnsi(queryArgumentPointer);
             if (string.IsNullOrWhiteSpace(name))
             {
                 return false;
@@ -242,22 +241,27 @@ namespace Gedx8MusicDriver.Api
 
             return mode switch
             {
-                0 => loadedObject.TryThinType2Query03F00(queryContextPointer, name),
-                1 => loadedObject.TryThinType2Query03F50(queryContextPointer, name),
-                2 => loadedObject.TryThinType2Query03FA0(queryArgumentPointer, name),
+                0 => loadedObject.TryThinType2Query03F00(name, payloadPointer),
+                1 => loadedObject.TryThinType2Query03F50(name, payloadPointer),
+                2 => loadedObject.TryThinType2Query03FA0(name, payloadPointer),
                 _ => false,
             };
         }
 
-        internal bool Method10002180(Gedx8LoadedObject loadedObject, int mode, int value, string? text)
+        internal bool Method10002180(Gedx8LoadedObject loadedObject, string name, int mode, IntPtr payloadPointer)
         {
             ThrowIfDisposed();
 
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return false;
+            }
+
             return mode switch
             {
-                0 => loadedObject.TryThinType2Configure04020(mode, value, text),
-                1 => loadedObject.TryThinType2Configure04070(mode, value, text),
-                2 => loadedObject.TryThinType2Configure040D0(mode, value, text),
+                0 => loadedObject.TryThinType2Configure04020(name, payloadPointer),
+                1 => loadedObject.TryThinType2Configure04070(name, payloadPointer),
+                2 => loadedObject.TryThinType2Configure040D0(name, payloadPointer),
                 _ => false,
             };
         }

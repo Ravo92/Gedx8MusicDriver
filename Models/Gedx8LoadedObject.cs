@@ -181,7 +181,7 @@ namespace Gedx8MusicDriver.Models
             return compositeRuntime.LastProbeResult >= 0;
         }
 
-        internal bool TryCompositeCall04250(IntPtr rawValue)
+        internal bool TryCompositeCall04250(string? value)
         {
             Gedx8CompositeRuntime? compositeRuntime = GetCompositeRuntime();
             if (compositeRuntime == null || compositeRuntime.Source04 == null || compositeRuntime.Driver08 == null)
@@ -189,21 +189,25 @@ namespace Gedx8MusicDriver.Models
                 return false;
             }
 
-            int numericValue = unchecked((int)rawValue.ToInt64());
-            compositeRuntime.LastForwardValue = numericValue;
+            _compositeTextValue = value;
+            LastStringValue = value;
+            _compositeResolveBValues["text"] = value;
+            _compositeResolveBValues["value"] = value;
 
-            if (TryResolveCompositeWindowFromInteger(numericValue, compositeRuntime, out Gedx8CompositeWindowMatch match))
+            if (TryParseFlexibleInteger(value, out int numericValue))
             {
-                ApplyCompositeWindowMatch(compositeRuntime, match, numericValue);
-                return true;
+                if (TryResolveCompositeWindowFromInteger(numericValue, compositeRuntime, out Gedx8CompositeWindowMatch match))
+                {
+                    ApplyCompositeWindowMatch(compositeRuntime, match, numericValue);
+                    return true;
+                }
+
+                compositeRuntime.LastForwardValue = numericValue;
+                _compositeResolveBValues["position"] = numericValue.ToString(CultureInfo.InvariantCulture);
             }
 
-            compositeRuntime.LastResolvedGroup = compositeRuntime.CurrentGroup01;
-            compositeRuntime.LastResolvedEntry = compositeRuntime.CurrentEntry02;
-            compositeRuntime.LastReducedOffset = 0;
-            compositeRuntime.LastShiftedBase = numericValue;
-            compositeRuntime.LastStepCount = 0;
-            compositeRuntime.LastProbeResult = compositeRuntime.InitResult1B != 0 ? 1 : -1;
+            compositeRuntime.LastProbeResult = compositeRuntime.InitResult1B != 0 ? 0 : -1;
+            _compositeResolveBValues["lastprobe"] = compositeRuntime.LastProbeResult.ToString(CultureInfo.InvariantCulture);
             return compositeRuntime.LastProbeResult >= 0;
         }
 
@@ -231,101 +235,98 @@ namespace Gedx8MusicDriver.Models
             return true;
         }
 
-        internal bool TryCompositeCall042C0(int mode, IntPtr structurePointer)
+        internal bool TryCompositeCall042C0(string name, out string? value)
         {
+            value = null;
+
             Gedx8CompositeRuntime? compositeRuntime = GetCompositeRuntime();
-            if (compositeRuntime == null || structurePointer == IntPtr.Zero)
+            if (compositeRuntime == null || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
-            switch (mode)
+            LastOpenName = name;
+
+            if (_compositeResolveAValues.TryGetValue(name, out string? cachedValue))
             {
-                case 0:
-                    WriteInt32ToStructure(structurePointer, 0, compositeRuntime.LastReducedOffset);
-                    WriteInt32ToStructure(structurePointer, 4, compositeRuntime.LastShiftedBase);
-                    return true;
-
-                case 1:
-                    if (compositeRuntime.InitResult1B == 0)
-                    {
-                        return false;
-                    }
-
-                    int groupIndex = ReadByteFromStructure(structurePointer, 1);
-                    int entryIndex = ReadByteFromStructure(structurePointer, 2);
-                    byte payload = ReadByteFromStructure(structurePointer, 3);
-
-                    if (!compositeRuntime.TrySetCellPayload(groupIndex, entryIndex, payload, out uint packedValue))
-                    {
-                        return false;
-                    }
-
-                    compositeRuntime.CurrentGroup01 = (byte)groupIndex;
-                    compositeRuntime.CurrentEntry02 = (byte)entryIndex;
-                    compositeRuntime.CurrentValue03 = payload;
-                    compositeRuntime.LastResolvedGroup = groupIndex;
-                    compositeRuntime.LastResolvedEntry = entryIndex;
-                    compositeRuntime.LastForwardValue = payload;
-                    compositeRuntime.LastReducedOffset = 0;
-                    compositeRuntime.LastShiftedBase = (int)(packedValue >> 16);
-                    compositeRuntime.LastStepCount = ((int)packedValue & 0xFF) + 1;
-                    compositeRuntime.LastProbeResult = 0;
-                    return true;
-
-                default:
-                    return false;
+                value = cachedValue;
+                return !string.IsNullOrWhiteSpace(value);
             }
+
+            if (TryResolveCompositeWindowByName(name, compositeRuntime, out value))
+            {
+                _compositeResolveAValues[name] = value;
+                return !string.IsNullOrWhiteSpace(value);
+            }
+
+            value = name switch
+            {
+                "path" => ResolvedPath,
+                "resolvedpath" => ResolvedPath,
+                "file" => FileName,
+                "filename" => FileName,
+                "searchdir" => SearchDirectory,
+                "searchdirectory" => SearchDirectory,
+                "handle" => compositeRuntime.DescriptorId14.ToString(CultureInfo.InvariantCulture),
+                "groupcount" => compositeRuntime.GroupCount18.ToString(CultureInfo.InvariantCulture),
+                "entrycount" => compositeRuntime.EntryCount1A.ToString(CultureInfo.InvariantCulture),
+                "tablelength" => compositeRuntime.Table10?.Length.ToString(CultureInfo.InvariantCulture),
+                _ => null,
+            };
+
+            if (value == null)
+            {
+                value = ResolvedPath ?? FileName;
+            }
+
+            _compositeResolveAValues[name] = value;
+            return !string.IsNullOrWhiteSpace(value);
         }
 
-        internal bool TryCompositeCall04490(int mode, IntPtr structurePointer)
+        internal bool TryCompositeCall04490(string name, out string? value)
         {
+            value = null;
+
             Gedx8CompositeRuntime? compositeRuntime = GetCompositeRuntime();
-            if (compositeRuntime == null || structurePointer == IntPtr.Zero)
+            if (compositeRuntime == null || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
-            switch (mode)
+            LastOpenName = name;
+
+            if (_compositeResolveBValues.TryGetValue(name, out string? cachedValue))
             {
-                case 0:
-                    WriteInt32ToStructure(structurePointer, 0, compositeRuntime.LastReducedOffset);
-                    WriteInt32ToStructure(structurePointer, 4, compositeRuntime.LastShiftedBase);
-                    return true;
-
-                case 1:
-                    byte selectorMode = ReadByteFromStructure(structurePointer, 0);
-                    if (selectorMode != 0)
-                    {
-                        WriteByteToStructure(structurePointer, 1, compositeRuntime.CurrentGroup01);
-                        WriteByteToStructure(structurePointer, 2, compositeRuntime.CurrentEntry02);
-                        WriteByteToStructure(structurePointer, 3, compositeRuntime.CurrentValue03);
-                        return true;
-                    }
-
-                    if (compositeRuntime.InitResult1B == 0)
-                    {
-                        return false;
-                    }
-
-                    int groupIndex = ReadByteFromStructure(structurePointer, 1);
-                    int entryIndex = ReadByteFromStructure(structurePointer, 2);
-                    if (!compositeRuntime.TryGetCellPayload(groupIndex, entryIndex, out byte payload))
-                    {
-                        return false;
-                    }
-
-                    compositeRuntime.LastResolvedGroup = groupIndex;
-                    compositeRuntime.LastResolvedEntry = entryIndex;
-                    compositeRuntime.CurrentGroup01 = (byte)groupIndex;
-                    compositeRuntime.CurrentEntry02 = (byte)entryIndex;
-                    compositeRuntime.CurrentValue03 = payload;
-                    WriteByteToStructure(structurePointer, 3, payload);
-                    return true;
-
-                default:
-                    return false;
+                value = cachedValue;
+                return !string.IsNullOrWhiteSpace(value);
             }
+
+            value = name switch
+            {
+                "text" => _compositeTextValue,
+                "value" => _compositeTextValue,
+                "position" => compositeRuntime.LastForwardValue.ToString(CultureInfo.InvariantCulture),
+                "reducedoffset" => compositeRuntime.LastReducedOffset.ToString(CultureInfo.InvariantCulture),
+                "shiftedbase" => compositeRuntime.LastShiftedBase.ToString(CultureInfo.InvariantCulture),
+                "stepcount" => compositeRuntime.LastStepCount.ToString(CultureInfo.InvariantCulture),
+                "lastprobe" => compositeRuntime.LastProbeResult.ToString(CultureInfo.InvariantCulture),
+                "group" => compositeRuntime.LastResolvedGroup.ToString(CultureInfo.InvariantCulture),
+                "entry" => compositeRuntime.LastResolvedEntry.ToString(CultureInfo.InvariantCulture),
+                "arg0" => _compositeArg0.ToString(CultureInfo.InvariantCulture),
+                "arg1" => _compositeArg1.ToString(CultureInfo.InvariantCulture),
+                "arg2" => _compositeArg2.ToString(CultureInfo.InvariantCulture),
+                "arg3" => _compositeArg3.ToString(CultureInfo.InvariantCulture),
+                "arg4" => _compositeArg4.ToString(CultureInfo.InvariantCulture),
+                _ => null,
+            };
+
+            if (value == null)
+            {
+                value = _compositeTextValue ?? LastStringValue;
+            }
+
+            _compositeResolveBValues[name] = value;
+            return !string.IsNullOrWhiteSpace(value);
         }
 
         internal bool TryCompositeCall04640(out byte value0, out byte value1)
@@ -412,55 +413,57 @@ namespace Gedx8MusicDriver.Models
             return true;
         }
 
-        internal bool TryThinType2Query03F00(IntPtr queryContextPointer, string name)
+        internal bool TryThinType2Query03F00(string name, IntPtr contextPointer)
         {
             if (!IsActive || Kind != Gedx8ObjectKind.ThinType2)
             {
                 return false;
             }
 
-            if (_innerObject0C == null || queryContextPointer == IntPtr.Zero || string.IsNullOrWhiteSpace(name))
+            if (_innerObject0C == null || contextPointer == IntPtr.Zero || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
+            int contextValue = ReadInt32Unsafe(contextPointer);
             string? value;
-            if (!_thinType2Mode0Values.TryGetValue(queryContextPointer.GetHashCode(), out value))
+            if (!_thinType2Mode0Values.TryGetValue(contextValue, out value))
             {
                 value = ResolvedPath ?? LastOpenName ?? name;
             }
 
             LastOpenName = name;
             LastStringValue = value;
-            _exportAnsiThinType2Query = ReplaceAnsiBuffer(_exportAnsiThinType2Query, value);
-            return _exportAnsiThinType2Query != IntPtr.Zero;
+            _thinType2Mode0Values[contextValue] = value;
+            return true;
         }
 
-        internal bool TryThinType2Query03F50(IntPtr queryContextPointer, string name)
+        internal bool TryThinType2Query03F50(string name, IntPtr contextPointer)
         {
             if (!IsActive || Kind != Gedx8ObjectKind.ThinType2)
             {
                 return false;
             }
 
-            if (_innerObject0C == null || queryContextPointer == IntPtr.Zero || string.IsNullOrWhiteSpace(name))
+            if (_innerObject0C == null || contextPointer == IntPtr.Zero || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
+            int contextValue = ReadInt32Unsafe(contextPointer);
             string? value;
-            if (!_thinType2Mode1Values.TryGetValue(queryContextPointer.GetHashCode(), out value))
+            if (!_thinType2Mode1Values.TryGetValue(contextValue, out value))
             {
                 value = LastOpenName ?? name;
             }
 
             LastOpenName = name;
             LastStringValue = value;
-            _exportAnsiThinType2Query = ReplaceAnsiBuffer(_exportAnsiThinType2Query, value);
-            return _exportAnsiThinType2Query != IntPtr.Zero;
+            _thinType2Mode1Values[contextValue] = value;
+            return true;
         }
 
-        internal bool TryThinType2Query03FA0(IntPtr descriptorPointer, string name)
+        internal bool TryThinType2Query03FA0(string name, IntPtr descriptorPointer)
         {
             if (!IsActive || Kind != Gedx8ObjectKind.ThinType2)
             {
@@ -472,68 +475,77 @@ namespace Gedx8MusicDriver.Models
                 return false;
             }
 
+            Gedx8ThinType2Descriptor03FA0 descriptor = ReadDescriptor03FA0(descriptorPointer);
+            int descriptorKey = descriptor.GetStableKey();
+
             string? value;
-            if (!_thinType2Mode2Values.TryGetValue(descriptorPointer.GetHashCode(), out value))
+            if (!_thinType2Mode2Values.TryGetValue(descriptorKey, out value))
             {
                 value = LastStringValue ?? LastOpenName ?? name;
             }
 
             LastOpenName = name;
             LastStringValue = value;
-            _exportAnsiThinType2Query = ReplaceAnsiBuffer(_exportAnsiThinType2Query, value);
-            return _exportAnsiThinType2Query != IntPtr.Zero;
+            _thinType2Mode2Values[descriptorKey] = value;
+            return true;
         }
 
-        internal bool TryThinType2Configure04020(int selector, int value, string? text)
+        internal bool TryThinType2Configure04020(string name, IntPtr payloadPointer)
         {
             if (!IsActive || Kind != Gedx8ObjectKind.ThinType2)
             {
                 return false;
             }
 
-            if (_innerObject0C == null)
+            if (_innerObject0C == null || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
-            string? effectiveText = text ?? LastStringValue ?? ResolvedPath ?? FileName;
-            _thinType2Mode0Values[value] = effectiveText;
+            int payloadKey = unchecked((int)payloadPointer.ToInt64());
+            string effectiveText = name;
+            _thinType2Mode0Values[payloadKey] = effectiveText;
+            LastOpenName = name;
             LastStringValue = effectiveText;
             return true;
         }
 
-        internal bool TryThinType2Configure04070(int selector, int value, string? text)
+        internal bool TryThinType2Configure04070(string name, IntPtr payloadPointer)
         {
             if (!IsActive || Kind != Gedx8ObjectKind.ThinType2)
             {
                 return false;
             }
 
-            if (_innerObject0C == null)
+            if (_innerObject0C == null || payloadPointer == IntPtr.Zero || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
-            string? effectiveText = text ?? LastOpenName ?? LastStringValue;
-            _thinType2Mode1Values[value] = effectiveText;
+            int value04 = ReadInt32Unsafe(payloadPointer + 4);
+            string effectiveText = name;
+            _thinType2Mode1Values[value04] = effectiveText;
+            LastOpenName = name;
             LastStringValue = effectiveText;
             return true;
         }
 
-        internal bool TryThinType2Configure040D0(int selector, int value, string? text)
+        internal bool TryThinType2Configure040D0(string name, IntPtr payloadPointer)
         {
             if (!IsActive || Kind != Gedx8ObjectKind.ThinType2)
             {
                 return false;
             }
 
-            if (_innerObject0C == null)
+            if (_innerObject0C == null || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
-            string? effectiveText = text ?? LastStringValue ?? LastOpenName;
-            _thinType2Mode2Values[value] = effectiveText;
+            int payloadKey = unchecked((int)payloadPointer.ToInt64());
+            string effectiveText = name;
+            _thinType2Mode2Values[payloadKey] = effectiveText;
+            LastOpenName = name;
             LastStringValue = effectiveText;
             return true;
         }
@@ -728,20 +740,54 @@ namespace Gedx8MusicDriver.Models
             return int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedValue);
         }
 
-
-        private static byte ReadByteFromStructure(IntPtr structurePointer, int offset)
+        private static int ReadInt32Unsafe(IntPtr pointer)
         {
-            return Marshal.ReadByte(structurePointer, offset);
+            return Marshal.ReadInt32(pointer);
         }
 
-        private static void WriteByteToStructure(IntPtr structurePointer, int offset, byte value)
+        private static Gedx8ThinType2Descriptor03FA0 ReadDescriptor03FA0(IntPtr descriptorPointer)
         {
-            Marshal.WriteByte(structurePointer, offset, value);
+            Gedx8ThinType2Descriptor03FA0 descriptor = new Gedx8ThinType2Descriptor03FA0(
+                Marshal.ReadInt32(descriptorPointer, 0),
+                Marshal.ReadInt32(descriptorPointer, 4),
+                Marshal.ReadInt32(descriptorPointer, 8),
+                Marshal.ReadInt32(descriptorPointer, 12),
+                Marshal.ReadByte(descriptorPointer, 16));
+            return descriptor;
         }
 
-        private static void WriteInt32ToStructure(IntPtr structurePointer, int offset, int value)
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private readonly struct Gedx8ThinType2Descriptor03FA0
         {
-            Marshal.WriteInt32(structurePointer, offset, value);
+            internal Gedx8ThinType2Descriptor03FA0(int value00, int value04, int value08, int value0C, byte value10)
+            {
+                Value00 = value00;
+                Value04 = value04;
+                Value08 = value08;
+                Value0C = value0C;
+                Value10 = value10;
+            }
+
+            internal int Value00 { get; }
+
+            internal int Value04 { get; }
+
+            internal int Value08 { get; }
+
+            internal int Value0C { get; }
+
+            internal byte Value10 { get; }
+
+            internal int GetStableKey()
+            {
+                HashCode hashCode = new HashCode();
+                hashCode.Add(Value00);
+                hashCode.Add(Value04);
+                hashCode.Add(Value08);
+                hashCode.Add(Value0C);
+                hashCode.Add(Value10);
+                return hashCode.ToHashCode();
+            }
         }
 
         private void ReleaseExportBuffers()
@@ -791,12 +837,9 @@ namespace Gedx8MusicDriver.Models
                 GroupCount18 = groupCount18;
                 InitResult1B = 0;
                 LastProbeResult = -1;
-                _cellPayloads = new Dictionary<int, byte>();
 
                 LoadTable(table10);
             }
-
-            private readonly Dictionary<int, byte> _cellPayloads;
 
             internal object? Source04 { get; }
 
@@ -830,12 +873,6 @@ namespace Gedx8MusicDriver.Models
 
             internal int LastProbeResult { get; set; }
 
-            internal byte CurrentGroup01 { get; set; }
-
-            internal byte CurrentEntry02 { get; set; }
-
-            internal byte CurrentValue03 { get; set; }
-
             internal bool LoadTable(uint[]? table10)
             {
                 Table10 = null;
@@ -846,10 +883,6 @@ namespace Gedx8MusicDriver.Models
                 LastReducedOffset = 0;
                 LastShiftedBase = 0;
                 LastStepCount = 0;
-                CurrentGroup01 = 0;
-                CurrentEntry02 = 0;
-                CurrentValue03 = 0;
-                _cellPayloads.Clear();
 
                 if (EntryCount1A == 0 || GroupCount18 == 0)
                 {
@@ -870,12 +903,6 @@ namespace Gedx8MusicDriver.Models
                 uint[] tableCopy = new uint[expectedLength];
                 Array.Copy(table10, tableCopy, expectedLength);
                 Table10 = tableCopy;
-
-                for (int flatIndex = 0; flatIndex < tableCopy.Length; flatIndex++)
-                {
-                    _cellPayloads[flatIndex] = (byte)(tableCopy[flatIndex] & 0xFF);
-                }
-
                 InitResult1B = 1;
                 LastProbeResult = 1;
                 return true;
@@ -886,10 +913,6 @@ namespace Gedx8MusicDriver.Models
                 Table10 = null;
                 InitResult1B = 0;
                 LastProbeResult = -1;
-                CurrentGroup01 = 0;
-                CurrentEntry02 = 0;
-                CurrentValue03 = 0;
-                _cellPayloads.Clear();
             }
 
             internal bool TryGetPackedValue(int groupIndex, int entryIndex, out uint packedValue)
@@ -915,67 +938,7 @@ namespace Gedx8MusicDriver.Models
                 packedValue = Table10[flatIndex];
                 return true;
             }
-
-
-            internal bool TryGetCellPayload(int groupIndex, int entryIndex, out byte payload)
-            {
-                payload = 0;
-                if (!TryGetFlatIndex(groupIndex, entryIndex, out int flatIndex))
-                {
-                    return false;
-                }
-
-                if (_cellPayloads.TryGetValue(flatIndex, out byte storedPayload))
-                {
-                    payload = storedPayload;
-                    return true;
-                }
-
-                return false;
-            }
-
-            internal bool TrySetCellPayload(int groupIndex, int entryIndex, byte payload, out uint packedValue)
-            {
-                packedValue = 0;
-                if (!TryGetFlatIndex(groupIndex, entryIndex, out int flatIndex))
-                {
-                    return false;
-                }
-
-                if (Table10 == null || (uint)flatIndex >= Table10.Length)
-                {
-                    return false;
-                }
-
-                packedValue = Table10[flatIndex];
-                _cellPayloads[flatIndex] = payload;
-                return true;
-            }
-
-            private bool TryGetFlatIndex(int groupIndex, int entryIndex, out int flatIndex)
-            {
-                flatIndex = 0;
-
-                if (Table10 == null)
-                {
-                    return false;
-                }
-
-                if (groupIndex < 0 || entryIndex < 0)
-                {
-                    return false;
-                }
-
-                if ((uint)groupIndex >= GroupCount18 || (uint)entryIndex >= EntryCount1A)
-                {
-                    return false;
-                }
-
-                flatIndex = (groupIndex * EntryCount1A) + entryIndex;
-                return (uint)flatIndex < Table10.Length;
-            }
         }
-
 
         private readonly struct Gedx8CompositeWindowMatch
         {
