@@ -1,87 +1,113 @@
 # Gedx8MusicDriver
 
-This project is a cleaned-up C# port of the directly observed wrapper layer of `gedx8musicdrv.dll`.
+This update finishes the `10002580` / `10002C60` / `10002C90` block as an ASM-first reconstruction, even though the normal Cultures runtime path did not hit these slots during live testing.
 
-## Scope
+## What changed
 
-Only code that can be tied directly to the DLL wrapper layer is kept here:
+### 10002580
 
-- `GetInterface2` bootstrap / interface creation
-- global instance registry behavior
-- driver-instance creation and release layout
-- the observed synth-init profile mapping
-- the observed slot-table growth rules
-- the wrapper-level object-kind gates for kinds `0`, `1`, and `2`
-- the DirectMusic loader search-directory preparation path
-- the directly observed top-level wrapper methods from the assembly around `10001920` through `100022B0`
+The selector dispatcher remains modeled as the native `0..12` jump-table path with the already confirmed lazy-slot layout:
 
-## Current state
+- selector `0` -> cached slot `+0x148`
+- selector `1` -> cached slot `+0x14C`
+- selector `2` -> cached slot `+0x150`
+- selector `3` -> cached slot `+0x154`
+- selectors `4..12` -> cached slots `+0x158 .. +0x178`
 
-The exported wrapper surface is in place through slot `+0x6C`, including the previously missing helper exports.
+The mode gates also stay aligned with the ASM:
+- selector `0` has no extra mode gate
+- selectors `1` and `2` require mode `2` or `3`
+- selector `3` requires mode `0`
 
-`10002580` is modeled close to the native jump-table layout, and the composite load path around `10003890` is now also much closer to the observed native structure.
+The fallback write-slot behavior at `this+0x17C + selector*4` remains part of the model, but this C# side still exposes it through the simplified `DispatchProperty(...)` API rather than through raw pointer-based caller storage.
 
-The C# side now reflects these confirmed points from the ASM and runtime traces:
+### 10002C60
 
-- selector `0` uses the lazy object slot at `this+0x148`
-- selectors `1` and `2` use `this+0x14C` / `this+0x150` and are only valid when `this+0x1B0` is `2` or `3`
-- selector `3` uses `this+0x154` and is only valid when `this+0x1B0` is `0`
-- selectors `4` through `12` use `this+0x158` through `this+0x178`
-- selectors `4` through `12` do **not** form a simple dependency chain; each has its own lazy-init path
-- selectors `4` through `12` initialize through the deeper `10002C90` helper and then immediately perform a bootstrap read back into the cached `this+0x17C` field area
-- selector `3` is special: the write path uses a 3-dword structure starting at `this+0x188`, which overlaps with the cached scalar slots later used by selectors `4` and `5`
-- the `10003890` kind-0 path is effectively a two-stage build:
-  - prepare the loader / search-directory state
-  - build an inner composite object of native size `0x1C`
-  - then build an outer wrapper record of native size `0x10`
-- the outer composite record is not marked active immediately at allocation time; activation happens later in the caller-side registration path
-- the outer composite record layout is now modeled around the observed native shape:
-  - `+0x04` kind
-  - `+0x08` loader mode
-  - `+0x0C` pointer/reference to the inner composite object
-- the inner composite object is now modeled around the observed `10004120` layout:
-  - `+0x04` source/interface-like object
-  - `+0x08` driver/owner object
-  - `+0x0C` link/helper object
-  - `+0x10` table pointer/state
-  - `+0x14` descriptor/state value
-  - `+0x18` group count
-  - `+0x1A` entry count
-  - `+0x1B` init result
-- the caller-side registration path still owns the slot-table growth / insertion logic, which matches the runtime trace where the loaded object is inserted only after the composite record has been built
+`10002C60` is now treated as a two-token helper-creation path instead of a generic "simple create" shortcut.
 
-This means the old model of “one C# object that is instantly active and directly doubles as the native composite build result” was too flat.
-The current C# code now follows the observed outer-record / inner-object split much more closely.
+The native call shape is:
 
+- caller passes a selector token such as `1000C558` / `1000C548`
+- caller also passes the target lazy-slot address (`this+0x148` etc.)
+- `10002C60` then forwards:
+  - target slot pointer
+  - selector token
+  - `0`
+  - fixed factory token `1000C1C8`
+  - `0`
+  - `0x6000`
+  - `-5`
+  - current object at `this+0x1C0`
+  - into `call [vtbl+0x0C]`
 
-## Additional wrapper tightening in this update
+The C# model now records both token layers:
 
-The C# model was tightened further for the binary composite helper paths:
+- selector token hash
+- fixed factory token hash for `1000C1C8`
+- target cached-slot offset
+- creation ordinal
 
-- `10001E70` / `10004250` now keep the incoming raw value as a native-style forwarded integer/pointer-sized value instead of treating it only as text.
-- `10001EB0` / `100042C0` are now modeled as the observed binary mode dispatcher:
-  - mode `0` writes an 8-byte pair back to the caller buffer
-  - mode `1` consumes a 4-byte cell-style structure and latches a mutable per-cell payload
-- `10001EE0` / `10004490` are now modeled as the matching binary read path:
-  - mode `0` writes the same 8-byte pair shape
-  - mode `1` either returns the current latched triple or reads the payload byte of a selected cell
-- the composite runtime now keeps a mutable per-cell payload map on top of the packed table, so the `042C0` write path and `04490` read path share real state instead of falling back to string dictionaries
+This is still a state model, not the real COM helper behind native `+[vtbl+0x0C]`, but it now matches the observed outer ABI much more closely.
 
-These paths are still conservative reimplementations, but they now follow the observed native binary call shapes much more closely than the earlier name-based placeholder model.
+### 10002C90
 
-## Remaining open points
+`10002C90` is now modeled as a descriptor-table producer first and a typed helper finalizer second.
 
-The project is still not at a full original-behavior end state.
+The native flow is reflected as:
 
-The largest remaining gaps are the deep inner semantics of paths such as:
+- use byte counter at `this+1`
+- compute descriptor-table entry at `this+0x04 + count*0x20`
+- write four dwords into the descriptor body
+- call `10002C60("1000C558", &localHelperSlot)`
+- call helper `+[vtbl+0x54]`
+- increment the descriptor count byte
+- call helper `+[vtbl+0x5C]`
 
-- `sub_10003D00`
-- the exact COM/object semantics inside `sub_10003890` for kinds `1` and `2`
-- the exact metadata/query semantics behind `10004120` and `10004670`
-- `10004250` beyond the currently observed forwarding and HRESULT behavior
+The C# model now records for each typed selector helper:
+
+- descriptor entry size `0x20`
+- descriptor table offset (`0x124 + ordinal*0x20` model)
+- selector id
+- cached-object offset
+- backing-value offset
+- get/set method offsets
+- selector token hash
+- fixed factory token hash (`1000C1C8`)
+- finalize/commit method offsets (`+0x54` / `+0x5C`)
+- creation ordinal
+
+This is intentionally still not claiming full native equivalence for the helper object itself, but it is now much closer to the actual layered helper construction visible in the ASM.
+
+## Runtime-observation status
+
+The important limitation is unchanged:
+
+- `10002580`
+- `10002C60`
+- `10002C90`
+
+were **not** observed on the normal tested Cultures playback path at runtime.
+
+So this block should currently be read as:
+
+- **strong static reconstruction from ASM**
+- **not yet runtime-confirmed from the game's normal music path**
+
+## Remaining open points for this block
+
+Still open are:
+
+- the real COM/helper object returned through native `10002C60`
+- the exact meaning of every dword written by native `10002C90`
+- the full semantics of helper `+[vtbl+0x54]`
+- the full semantics of helper `+[vtbl+0x5C]`
+- whether Cultures exercises this whole selector-helper path only in uncommon or unused scenarios
+
+## Best next targets
+
+With this block now statically tightened, the most productive next reverse targets remain:
+
+- `10004250`
 - `100042C0`
-- the exact inner COM/object behavior behind each `10002580` selector once the lazy object has been created
-- the deeper thin-type query/configure paths around `10003F00`, `10003F50`, and `10003FA0`
-
-So the wrapper surface, selector layout, and the composite kind-0 build structure are now much better grounded,
-but the deeper inner COM-style semantics behind those objects are still modeled conservatively on the C# side.
+- `10003D00`
+- inner COM semantics of `10003890` for kind `1/2`

@@ -1,9 +1,8 @@
 using System.Runtime.InteropServices;
 using Gedx8MusicDriver.Core;
-using Gedx8MusicDriver.Interop;
 using Gedx8MusicDriver.Models;
 
-namespace Gedx8MusicDriver.Api
+namespace Gedx8MusicDriver.Interop
 {
     internal sealed class Gedx8DriverInstance : IDisposable
     {
@@ -15,6 +14,9 @@ namespace Gedx8MusicDriver.Api
         private Gedx8Block14_10003810? _block10;
         private Gedx8Block0C_10002D90? _block14;
         private bool _disposed;
+        private readonly Dictionary<Gedx8Audiopath, int> _audiopathTokens = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<Gedx8LoadedObject, byte> _segmentPlaybackStates = new(ReferenceEqualityComparer.Instance);
+        private int _nextAudiopathToken;
 
         private Gedx8DriverInstance(Gedx8GlobalRegistry globalRegistry)
         {
@@ -128,6 +130,54 @@ namespace Gedx8MusicDriver.Api
             return _engine10.Call03CA0();
         }
 
+        internal bool Method10001B70(IntPtr configPointer, Gedx8LoadedObject? seedObject, out Gedx8Audiopath? audiopath)
+        {
+            ThrowIfDisposed();
+
+            if (!_engine10.IsSynthInitialized)
+            {
+                audiopath = null;
+                return false;
+            }
+
+            int token = unchecked(++_nextAudiopathToken);
+            int profile = SynthesizerConfig.Config;
+            if (configPointer != IntPtr.Zero)
+            {
+                profile = Marshal.ReadInt32(configPointer, 4);
+            }
+
+            audiopath = new Gedx8Audiopath(token, profile, seedObject);
+            _audiopathTokens[audiopath] = token;
+            return true;
+        }
+
+        internal bool Method10001CF0ActivateAudiopath(Gedx8Audiopath audiopath, int activeState)
+        {
+            ThrowIfDisposed();
+
+            if (!_audiopathTokens.ContainsKey(audiopath))
+            {
+                return false;
+            }
+
+            audiopath.SetActive(activeState != 0);
+            return true;
+        }
+
+        internal bool Method10001D10SetVolumeOfAudiopath(Gedx8Audiopath audiopath, int volume, int fadeMilliseconds)
+        {
+            ThrowIfDisposed();
+
+            if (!_audiopathTokens.ContainsKey(audiopath))
+            {
+                return false;
+            }
+
+            audiopath.SetVolume(volume, fadeMilliseconds);
+            return true;
+        }
+
         internal bool Method10001CF0(byte value)
         {
             ThrowIfDisposed();
@@ -158,16 +208,79 @@ namespace Gedx8MusicDriver.Api
             return _engine10.DispatchProperty(selector, value, false, out storedValue);
         }
 
+        internal bool Method10001DA0DestroyAudiopath(Gedx8Audiopath audiopath)
+        {
+            ThrowIfDisposed();
+
+            if (!_audiopathTokens.Remove(audiopath))
+            {
+                return false;
+            }
+
+            audiopath.SetActive(false);
+            return true;
+        }
+
+        internal bool Method10001E30StartSegmentPlayback(Gedx8Audiopath audiopath, Gedx8LoadedObject loadedObject, int flags, int startTime, int repeatCount, int reserved, int immediateFlag)
+        {
+            ThrowIfDisposed();
+
+            if (!_audiopathTokens.ContainsKey(audiopath) || !loadedObject.IsActive)
+            {
+                return false;
+            }
+
+            if (!audiopath.IsActive)
+            {
+                return false;
+            }
+
+            _segmentPlaybackStates[loadedObject] = 1;
+            audiopath.AttachSegment(loadedObject, flags, startTime, repeatCount, reserved, immediateFlag);
+            return true;
+        }
+
+        internal bool Method10001E70ResetSegmentPlayback(Gedx8LoadedObject loadedObject, int stopMode)
+        {
+            ThrowIfDisposed();
+
+            if (!loadedObject.IsActive)
+            {
+                return false;
+            }
+
+            _segmentPlaybackStates[loadedObject] = 0;
+            return true;
+        }
+
+        internal bool Method10001E90GetPlaybackStateOfSegment(Gedx8LoadedObject loadedObject, out byte state)
+        {
+            ThrowIfDisposed();
+
+            state = 0;
+            if (!loadedObject.IsActive)
+            {
+                return false;
+            }
+
+            if (_segmentPlaybackStates.TryGetValue(loadedObject, out byte storedState))
+            {
+                state = storedState;
+            }
+
+            return true;
+        }
+
         internal bool Method10001E30(Gedx8LoadedObject loadedObject, int arg0, int arg1, int arg2, int arg3, int arg4)
         {
             ThrowIfDisposed();
             return loadedObject.TryCompositeCall04190(arg0, arg1, arg2, arg3, arg4);
         }
 
-        internal bool Method10001E70(Gedx8LoadedObject loadedObject, string? value)
+        internal bool Method10001E70(Gedx8LoadedObject loadedObject, IntPtr rawValue)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall04250(value);
+            return loadedObject.TryCompositeCall04250(rawValue);
         }
 
         internal bool Method10001E90(Gedx8LoadedObject loadedObject, out byte readyByte)
@@ -176,22 +289,37 @@ namespace Gedx8MusicDriver.Api
             return loadedObject.TryCompositeCall04280(out readyByte);
         }
 
-        internal bool Method10001EB0(Gedx8LoadedObject loadedObject, string name, out string? resolvedValue)
+        internal bool Method10001EB0(Gedx8LoadedObject loadedObject, int mode, IntPtr structurePointer)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall042C0(name, out resolvedValue);
+            return loadedObject.TryCompositeCall042C0(mode, structurePointer);
         }
 
-        internal bool Method10001EE0(Gedx8LoadedObject loadedObject, string name, out string? resolvedValue)
+        internal bool Method10001EE0(Gedx8LoadedObject loadedObject, int mode, IntPtr structurePointer)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall04490(name, out resolvedValue);
+            return loadedObject.TryCompositeCall04490(mode, structurePointer);
         }
 
         internal bool Method10001F10(Gedx8LoadedObject loadedObject, out byte value0, out byte value1)
         {
             ThrowIfDisposed();
             return loadedObject.TryCompositeCall04640(out value0, out value1);
+        }
+
+        internal bool Method10001F30DestroySegment(Gedx8LoadedObject loadedObject)
+        {
+            ThrowIfDisposed();
+
+            _segmentPlaybackStates.Remove(loadedObject);
+
+            if (!DestroyLoadedObject10003C30(loadedObject, true))
+            {
+                return false;
+            }
+
+            RemoveLoadedObjectFromTable0810001AD0(loadedObject);
+            return true;
         }
 
         internal bool Method10001FF0(Gedx8LoadedObject loadedObject)
@@ -269,6 +397,8 @@ namespace Gedx8MusicDriver.Api
         internal bool Method100021F0(Gedx8LoadedObject loadedObject)
         {
             ThrowIfDisposed();
+
+            _segmentPlaybackStates.Remove(loadedObject);
 
             if (!loadedObject.TryThinType2Release03E90())
             {
@@ -363,6 +493,8 @@ namespace Gedx8MusicDriver.Api
 
         private void RemoveLoadedObjectFromTable0810001AD0(Gedx8LoadedObject loadedObject)
         {
+            _segmentPlaybackStates.Remove(loadedObject);
+
             int index = _slotTable08.IndexOf(loadedObject);
             if (index >= 0)
             {

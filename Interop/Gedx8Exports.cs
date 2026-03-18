@@ -1,6 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Gedx8MusicDriver.Api;
 using Gedx8MusicDriver.Core;
 using Gedx8MusicDriver.Models;
 
@@ -18,7 +17,9 @@ namespace Gedx8MusicDriver.Interop
     internal struct Gedx8NativeMethodTable
     {
         public IntPtr Slot00_10001090;
+        public IntPtr Slot04_100010D0;
         public IntPtr Slot08_100013F0;
+        public IntPtr Slot0C_10001630;
 
         public IntPtr Slot10_10001920;
         public IntPtr Slot14_10001940;
@@ -30,24 +31,32 @@ namespace Gedx8MusicDriver.Interop
         public IntPtr Slot28_10001AD0;
         public IntPtr Slot2C_10001B50;
         public IntPtr Slot30_10001B60;
+        public IntPtr Slot34_10001B70;
+        public IntPtr Slot38_10001CF0;
+        public IntPtr Slot3C_10001D10;
+        public IntPtr Slot40_10001D50;
+        public IntPtr Slot44_10001D30;
+        public IntPtr Slot48_10001D70;
+        public IntPtr Slot4C_10001D90;
+        public IntPtr Slot50_10001DA0;
 
-        public IntPtr Slot34_10001D10;
-        public IntPtr Slot38_10001D50;
-        public IntPtr Slot3C_10001D70;
-
-        public IntPtr Slot40_10001E30;
-        public IntPtr Slot44_10001E70;
-        public IntPtr Slot48_10001E90;
-        public IntPtr Slot4C_10001EB0;
-        public IntPtr Slot50_10001EE0;
-
-        public IntPtr Slot54_10002010;
-        public IntPtr Slot58_100020D0;
-        public IntPtr Slot5C_100020F0;
-        public IntPtr Slot60_10002110;
-        public IntPtr Slot64_10002180;
-        public IntPtr Slot68_100021F0;
-        public IntPtr Slot6C_100022B0;
+        public IntPtr Slot54_10001E30;
+        public IntPtr Slot58_10001E70;
+        public IntPtr Slot5C_10001E90;
+        public IntPtr Slot60_10001EB0;
+        public IntPtr Slot64_10001EE0;
+        public IntPtr Slot68_10001F10;
+        public IntPtr Slot6C_10001F30;
+        public IntPtr Slot70_10001FF0;
+        public IntPtr Slot74_10001D90_Alias;
+        public IntPtr Slot78_10002010;
+        public IntPtr Slot7C_100020D0;
+        public IntPtr Slot80_100020F0;
+        public IntPtr Slot84_10002110;
+        public IntPtr Slot88_10002180;
+        public IntPtr Slot8C_10001D90_Alias2;
+        public IntPtr Slot90_100021F0;
+        public IntPtr Slot94_100022B0;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -118,7 +127,9 @@ namespace Gedx8MusicDriver.Interop
                 Gedx8NativeMethodTable methodTable = new Gedx8NativeMethodTable
                 {
                     Slot00_10001090 = (IntPtr)(delegate* unmanaged[Stdcall]<void>)&Slot00_10001090,
+                    Slot04_100010D0 = (IntPtr)(delegate* unmanaged[Stdcall]<byte>)&Slot04_100010D0,
                     Slot08_100013F0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr>)&Slot08_100013F0,
+                    Slot0C_10001630 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot0C_10001630,
 
                     Slot10_10001920 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, Gedx8NativeSynthInitConfig, byte>)&Slot10_10001920,
                     Slot14_10001940 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot14_10001940,
@@ -130,30 +141,33 @@ namespace Gedx8MusicDriver.Interop
                     Slot28_10001AD0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot28_10001AD0,
                     Slot2C_10001B50 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot2C_10001B50,
                     Slot30_10001B60 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot30_10001B60,
+                    Slot34_10001B70 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, IntPtr, byte>)&Slot34_10001B70,
+                    Slot38_10001CF0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int, byte>)&Slot38_10001CF0,
+                    Slot3C_10001D10 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int, int, byte>)&Slot3C_10001D10,
+                    Slot40_10001D50 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, int, int, IntPtr, byte>)&Slot40_10001D50,
+                    Slot44_10001D30 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot44_10001D30,
+                    Slot48_10001D70 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, int, int, IntPtr, byte>)&Slot48_10001D70,
+                    Slot4C_10001D90 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte, byte>)&Slot4C_10001D90,
+                    Slot50_10001DA0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot50_10001DA0,
 
-                    Slot34_10001D10 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, int, int, byte>)&Slot34_10001D10,
-                    Slot38_10001D50 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, int, int, IntPtr, byte>)&Slot38_10001D50,
-                    Slot3C_10001D70 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, int, int, IntPtr, byte>)&Slot3C_10001D70,
-
-                    Slot40_10001E30 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int, int, int, int, int, byte>)&Slot40_10001E30,
-                    Slot44_10001E70 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, byte>)&Slot44_10001E70,
-                    Slot48_10001E90 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, byte>)&Slot48_10001E90,
-                    Slot4C_10001EB0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, IntPtr, byte>)&Slot4C_10001EB0,
-                    Slot50_10001EE0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, IntPtr, byte>)&Slot50_10001EE0,
-
-                    Slot54_10002010 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot54_10002010,
-                    Slot58_100020D0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot58_100020D0,
-                    Slot5C_100020F0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, byte>)&Slot5C_100020F0,
-                    Slot60_10002110 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int, IntPtr, byte>)&Slot60_10002110,
-                    Slot64_10002180 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int, IntPtr, byte>)&Slot64_10002180,
-                    Slot68_100021F0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot68_100021F0,
-                    Slot6C_100022B0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot6C_100022B0,
+                    Slot54_10001E30 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int, int, int, int, byte>)&Slot54_10001E30,
+                    Slot58_10001E70 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int, byte>)&Slot58_10001E70,
+                    Slot5C_10001E90 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, byte>)&Slot5C_10001E90,
+                    Slot60_10001EB0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, IntPtr, byte>)&Slot60_10001EB0,
+                    Slot64_10001EE0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, IntPtr, byte>)&Slot64_10001EE0,
+                    Slot68_10001F10 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, IntPtr, byte>)&Slot68_10001F10,
+                    Slot6C_10001F30 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot6C_10001F30,
+                    Slot70_10001FF0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot70_10001FF0,
+                    Slot74_10001D90_Alias = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte, byte>)&Slot4C_10001D90,
+                    Slot78_10002010 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot78_10002010,
+                    Slot7C_100020D0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot7C_100020D0,
+                    Slot80_100020F0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, byte>)&Slot80_100020F0,
+                    Slot84_10002110 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int, IntPtr, byte>)&Slot84_10002110,
+                    Slot88_10002180 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int, IntPtr, byte>)&Slot88_10002180,
+                    Slot8C_10001D90_Alias2 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte, byte>)&Slot4C_10001D90,
+                    Slot90_100021F0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, IntPtr, byte>)&Slot90_100021F0,
+                    Slot94_100022B0 = (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, byte>)&Slot94_100022B0
                 };
-
-                Gedx8NativeRawInterfaceObject rawInterface = new Gedx8NativeRawInterfaceObject
-                {
-                    Entry00_10001000 = (IntPtr)(delegate* unmanaged[Stdcall]<int, int, byte>)&Sub10001000,
-                    MethodTable04 = s_methodTablePointer,
                 };
 
                 Marshal.StructureToPtr(methodTable, s_methodTablePointer, false);
@@ -243,6 +257,12 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot04_100010D0()
+        {
+            return ToNativeBool(Gedx8GlobalRegistry.Shared.Sub100010D0());
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static IntPtr Slot08_100013F0()
         {
             Gedx8DriverInstance? instance = Gedx8GlobalRegistry.Shared.Sub100013F0();
@@ -252,6 +272,24 @@ namespace Gedx8MusicDriver.Interop
             }
 
             return RegisterDriverHandle(instance);
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot0C_10001630(IntPtr instanceHandle)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            if (instance == null)
+            {
+                return 0;
+            }
+
+            bool result = Gedx8GlobalRegistry.Shared.Sub10001630(instance);
+            if (result)
+            {
+                ReleaseDriverHandle(instanceHandle);
+            }
+
+            return ToNativeBool(result);
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
@@ -364,14 +402,39 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot34_10001D10(IntPtr instanceHandle, int selection, int mode)
+        private static byte Slot34_10001B70(IntPtr instanceHandle, IntPtr configPointer, IntPtr audiopathOut, IntPtr loadedObjectHandle)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
-            return ToNativeBool(instance != null && instance.Method10001D10(selection, mode));
+            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
+            if (instance == null || audiopathOut == IntPtr.Zero)
+            {
+                return 0;
+            }
+
+            bool result = instance.Method10001B70(configPointer, loadedObject, out Gedx8Audiopath? audiopath);
+            IntPtr handle = result && audiopath != null ? RegisterAudiopathHandle(audiopath) : IntPtr.Zero;
+            Marshal.WriteIntPtr(audiopathOut, handle);
+            return ToNativeBool(result);
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot38_10001D50(IntPtr instanceHandle, int selector, int value, IntPtr storedValueOut)
+        private static byte Slot38_10001CF0(IntPtr instanceHandle, IntPtr audiopathHandle, int activeState)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            Gedx8Audiopath? audiopath = ResolveAudiopath(audiopathHandle);
+            return ToNativeBool(instance != null && audiopath != null && instance.Method10001CF0ActivateAudiopath(audiopath, activeState));
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot3C_10001D10(IntPtr instanceHandle, IntPtr audiopathHandle, int volume, int fadeMilliseconds)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            Gedx8Audiopath? audiopath = ResolveAudiopath(audiopathHandle);
+            return ToNativeBool(instance != null && audiopath != null && instance.Method10001D10SetVolumeOfAudiopath(audiopath, volume, fadeMilliseconds));
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot40_10001D50(IntPtr instanceHandle, int selector, int value, IntPtr storedValueOut)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             if (instance == null || storedValueOut == IntPtr.Zero)
@@ -385,7 +448,21 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot3C_10001D70(IntPtr instanceHandle, int selector, int value, IntPtr storedValueOut)
+        private static byte Slot44_10001D30(IntPtr instanceHandle, IntPtr selectionOut)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            if (instance == null || selectionOut == IntPtr.Zero)
+            {
+                return 0;
+            }
+
+            bool result = instance.Method10001D30(out int selection);
+            Marshal.WriteInt32(selectionOut, selection);
+            return ToNativeBool(result);
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot48_10001D70(IntPtr instanceHandle, int selector, int value, IntPtr storedValueOut)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             if (instance == null || storedValueOut == IntPtr.Zero)
@@ -399,83 +476,136 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot40_10001E30(IntPtr instanceHandle, IntPtr loadedObjectHandle, int arg0, int arg1, int arg2, int arg3, int arg4)
+        private static byte Slot4C_10001D90(IntPtr instanceHandle, byte value)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
-            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            return ToNativeBool(instance != null && loadedObject != null && instance.Method10001E30(loadedObject, arg0, arg1, arg2, arg3, arg4));
+            return ToNativeBool(instance != null && instance.Method10001CF0(value));
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot44_10001E70(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr valuePointer)
+        private static byte Slot50_10001DA0(IntPtr instanceHandle, IntPtr audiopathHandle)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
-            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            string? value = ReadAnsiString(valuePointer);
-            return ToNativeBool(instance != null && loadedObject != null && instance.Method10001E70(loadedObject, value));
-        }
-
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot48_10001E90(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr readyByteOut)
-        {
-            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
-            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            if (instance == null || loadedObject == null || readyByteOut == IntPtr.Zero)
+            Gedx8Audiopath? audiopath = ResolveAudiopath(audiopathHandle);
+            if (instance == null || audiopath == null)
             {
                 return 0;
             }
 
-            bool result = instance.Method10001E90(loadedObject, out byte readyByte);
-            Marshal.WriteByte(readyByteOut, readyByte);
+            bool result = instance.Method10001DA0DestroyAudiopath(audiopath);
+            if (result)
+            {
+                ReleaseAudiopathHandle(audiopathHandle);
+            }
+
             return ToNativeBool(result);
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot4C_10001EB0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer, IntPtr resolvedValueOut)
+        private static byte Slot54_10001E30(IntPtr instanceHandle, IntPtr audiopathHandle, IntPtr loadedObjectHandle, int flags, int startTime, int repeatCount, int reserved)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            Gedx8Audiopath? audiopath = ResolveAudiopath(audiopathHandle);
+            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
+            return ToNativeBool(instance != null && audiopath != null && loadedObject != null && instance.Method10001E30StartSegmentPlayback(audiopath, loadedObject, flags, startTime, repeatCount, reserved, 0));
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot58_10001E70(IntPtr instanceHandle, IntPtr loadedObjectHandle, int stopMode)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            if (instance == null || loadedObject == null || resolvedValueOut == IntPtr.Zero)
+            return ToNativeBool(instance != null && loadedObject != null && instance.Method10001E70ResetSegmentPlayback(loadedObject, stopMode));
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot5C_10001E90(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr stateOut)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
+            if (instance == null || loadedObject == null || stateOut == IntPtr.Zero)
             {
                 return 0;
             }
 
-            string? name = ReadAnsiString(namePointer);
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                Marshal.WriteIntPtr(resolvedValueOut, IntPtr.Zero);
-                return 0;
-            }
-
-            bool result = instance.Method10001EB0(loadedObject, name, out string? resolvedValue);
-            Marshal.WriteIntPtr(resolvedValueOut, loadedObject.StoreCompositeResolveAForExport(resolvedValue));
+            bool result = instance.Method10001E90GetPlaybackStateOfSegment(loadedObject, out byte state);
+            Marshal.WriteByte(stateOut, state);
             return ToNativeBool(result);
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot50_10001EE0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer, IntPtr resolvedValueOut)
+        private static byte Slot60_10001EB0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr modeValue, IntPtr structurePointer)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            if (instance == null || loadedObject == null || resolvedValueOut == IntPtr.Zero)
+            if (instance == null || loadedObject == null)
             {
                 return 0;
             }
 
-            string? name = ReadAnsiString(namePointer);
-            if (string.IsNullOrWhiteSpace(name))
+            int mode = unchecked((int)modeValue);
+            return ToNativeBool(instance.Method10001EB0(loadedObject, mode, structurePointer));
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot64_10001EE0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr modeValue, IntPtr structurePointer)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
+            if (instance == null || loadedObject == null)
             {
-                Marshal.WriteIntPtr(resolvedValueOut, IntPtr.Zero);
                 return 0;
             }
 
-            bool result = instance.Method10001EE0(loadedObject, name, out string? resolvedValue);
-            Marshal.WriteIntPtr(resolvedValueOut, loadedObject.StoreCompositeResolveBForExport(resolvedValue));
+            int mode = unchecked((int)modeValue);
+            return ToNativeBool(instance.Method10001EE0(loadedObject, mode, structurePointer));
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot68_10001F10(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr value0Out, IntPtr value1Out)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
+            if (instance == null || loadedObject == null || value0Out == IntPtr.Zero || value1Out == IntPtr.Zero)
+            {
+                return 0;
+            }
+
+            bool result = instance.Method10001F10(loadedObject, out byte value0, out byte value1);
+            Marshal.WriteByte(value0Out, value0);
+            Marshal.WriteByte(value1Out, value1);
             return ToNativeBool(result);
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot54_10002010(IntPtr instanceHandle, IntPtr loadedObjectHandle)
+        private static byte Slot6C_10001F30(IntPtr instanceHandle, IntPtr loadedObjectHandle)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
+            if (instance == null || loadedObject == null)
+            {
+                return 0;
+            }
+
+            bool result = instance.Method10001F30DestroySegment(loadedObject);
+            if (result)
+            {
+                ReleaseLoadedObjectHandle(loadedObjectHandle);
+            }
+
+            return ToNativeBool(result);
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot70_10001FF0(IntPtr instanceHandle, IntPtr loadedObjectHandle)
+        {
+            Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
+            Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
+            return ToNativeBool(instance != null && loadedObject != null && instance.Method10001FF0(loadedObject));
+        }
+
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static byte Slot78_10002010(IntPtr instanceHandle, IntPtr loadedObjectHandle)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
@@ -494,7 +624,7 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot58_100020D0(IntPtr instanceHandle, IntPtr loadedObjectHandle)
+        private static byte Slot7C_100020D0(IntPtr instanceHandle, IntPtr loadedObjectHandle)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
@@ -502,7 +632,7 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot5C_100020F0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer)
+        private static byte Slot80_100020F0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
@@ -511,7 +641,7 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot60_10002110(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer, int mode, IntPtr payloadPointer)
+        private static byte Slot84_10002110(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer, int mode, IntPtr payloadPointer)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
@@ -520,7 +650,7 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot64_10002180(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer, int mode, IntPtr payloadPointer)
+        private static byte Slot88_10002180(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer, int mode, IntPtr payloadPointer)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
@@ -529,7 +659,7 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot68_100021F0(IntPtr instanceHandle, IntPtr loadedObjectHandle)
+        private static byte Slot90_100021F0(IntPtr instanceHandle, IntPtr loadedObjectHandle)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
@@ -548,7 +678,7 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot6C_100022B0(IntPtr instanceHandle)
+        private static byte Slot94_100022B0(IntPtr instanceHandle)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             return ToNativeBool(instance != null && instance.Method100022B0());
@@ -603,6 +733,20 @@ namespace Gedx8MusicDriver.Interop
             }
         }
 
+        private static void ReleaseDriverHandle(IntPtr handlePointer)
+        {
+            lock (s_sync)
+            {
+                if (!s_driverHandlesByPointer.TryGetValue(handlePointer, out GCHandle handle))
+                {
+                    return;
+                }
+
+                Gedx8DriverInstance? instance = handle.Target as Gedx8DriverInstance;
+                ReleaseDriverHandleNoLock(handlePointer, instance);
+            }
+        }
+
         private static Gedx8LoadedObject? ResolveLoadedObject(IntPtr handlePointer)
         {
             lock (s_sync)
@@ -613,6 +757,52 @@ namespace Gedx8MusicDriver.Interop
                 }
 
                 return handle.Target as Gedx8LoadedObject;
+            }
+        }
+
+
+        private static IntPtr RegisterAudiopathHandle(Gedx8Audiopath audiopath)
+        {
+            lock (s_sync)
+            {
+                if (s_audiopathPointersByInstance.TryGetValue(audiopath, out IntPtr existingPointer))
+                {
+                    return existingPointer;
+                }
+
+                GCHandle handle = GCHandle.Alloc(audiopath, GCHandleType.Normal);
+                IntPtr pointer = GCHandle.ToIntPtr(handle);
+
+                s_audiopathHandlesByPointer[pointer] = handle;
+                s_audiopathPointersByInstance[audiopath] = pointer;
+                return pointer;
+            }
+        }
+
+        private static Gedx8Audiopath? ResolveAudiopath(IntPtr handlePointer)
+        {
+            lock (s_sync)
+            {
+                if (!s_audiopathHandlesByPointer.TryGetValue(handlePointer, out GCHandle handle))
+                {
+                    return null;
+                }
+
+                return handle.Target as Gedx8Audiopath;
+            }
+        }
+
+        private static void ReleaseAudiopathHandle(IntPtr handlePointer)
+        {
+            lock (s_sync)
+            {
+                if (!s_audiopathHandlesByPointer.TryGetValue(handlePointer, out GCHandle handle))
+                {
+                    return;
+                }
+
+                Gedx8Audiopath? audiopath = handle.Target as Gedx8Audiopath;
+                ReleaseAudiopathHandleNoLock(handlePointer, audiopath);
             }
         }
 
@@ -627,6 +817,30 @@ namespace Gedx8MusicDriver.Interop
 
                 Gedx8LoadedObject? loadedObject = handle.Target as Gedx8LoadedObject;
                 ReleaseLoadedObjectHandleNoLock(handlePointer, loadedObject);
+            }
+        }
+
+        private static void ReleaseAudiopathHandleNoLock(IntPtr handlePointer, Gedx8Audiopath? audiopath)
+        {
+            if (!s_audiopathHandlesByPointer.TryGetValue(handlePointer, out GCHandle handle))
+            {
+                return;
+            }
+
+            s_audiopathHandlesByPointer.Remove(handlePointer);
+
+            if (audiopath != null)
+            {
+                s_audiopathPointersByInstance.Remove(audiopath);
+            }
+            else if (handle.Target is Gedx8Audiopath targetAudiopath)
+            {
+                s_audiopathPointersByInstance.Remove(targetAudiopath);
+            }
+
+            if (handle.IsAllocated)
+            {
+                handle.Free();
             }
         }
 

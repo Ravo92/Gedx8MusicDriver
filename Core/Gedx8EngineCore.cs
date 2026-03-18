@@ -1,4 +1,4 @@
-using Gedx8MusicDriver.Interop;
+﻿using Gedx8MusicDriver.Interop;
 using Gedx8MusicDriver.Models;
 
 namespace Gedx8MusicDriver.Core
@@ -19,6 +19,24 @@ namespace Gedx8MusicDriver.Core
         private int _value1BC;
         private object? _value1C0;
         private int _value1C4;
+        private readonly int[] _selector3Triple188 = new int[3];
+        private readonly int[] _typedSelectorBackings18C = new int[9];
+        private readonly Gedx8TypedPropertyDescriptor[] _typedDescriptors124 = new Gedx8TypedPropertyDescriptor[0x20];
+        private byte _typedDescriptorCount01;
+        private int _simplePropertyCreateCount02C60;
+        private int _typedPropertyCreateCount02C90;
+        private int _lastPropertyCreateTokenHash;
+        private int _lastPropertyCreateResult;
+        private int _synthDescriptorSize28;
+        private int _synthDescriptorMode18;
+        private int _synthDescriptorVoiceCount1C;
+        private int _synthDescriptorMask20;
+        private int _synthCommittedSampleRate24;
+        private int _synthCommittedConfig28;
+        private float _synthCommittedGainC2B8;
+        private int _synthCommittedEnableC2C8;
+        private int _synthCommittedSampleRateC2D8;
+        private int _synthCommittedConfigC2E8;
 
         internal Gedx8SynthInitConfig SynthInitConfig { get; private set; } = Gedx8SynthInitConfig.Empty;
 
@@ -49,13 +67,33 @@ namespace Gedx8MusicDriver.Core
                 return false;
             }
 
-            SynthInitConfig = new Gedx8SynthInitConfig(0x28, config.SampleRate, config.Config);
+            SynthInitConfig = config;
             IsSynthInitialized = true;
             _value00 = 0;
             _value04 = 0;
             _value08 = 0;
             _value1B8 = 0;
             _value1BC = 0;
+
+            Array.Clear(_selector3Triple188);
+            Array.Clear(_typedSelectorBackings18C);
+            Array.Clear(_typedDescriptors124);
+            _typedDescriptorCount01 = 0;
+            _simplePropertyCreateCount02C60 = 0;
+            _typedPropertyCreateCount02C90 = 0;
+            _lastPropertyCreateTokenHash = 0;
+            _lastPropertyCreateResult = 0;
+
+            _synthDescriptorSize28 = 0x28;
+            _synthDescriptorMode18 = 1;
+            _synthDescriptorVoiceCount1C = 7;
+            _synthDescriptorMask20 = 0x3F;
+            _synthCommittedSampleRate24 = config.SampleRate;
+            _synthCommittedConfig28 = config.Config;
+            _synthCommittedGainC2B8 = 1.0f;
+            _synthCommittedEnableC2C8 = 1;
+            _synthCommittedSampleRateC2D8 = config.SampleRate;
+            _synthCommittedConfigC2E8 = config.Config;
 
             ResetResolvedPropertyCache();
             SetRuntimeModeFields10002380(0, config.Config, 1);
@@ -220,11 +258,11 @@ namespace Gedx8MusicDriver.Core
                     break;
 
                 case Gedx8ObjectKind.ThinType1:
-                    loadedObject.Sub10002D30(1, loaderMode, resolvedPath);
+                    loadedObject.Sub10002D30(1, loaderMode, CreateThinRuntime(kind, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, recordOwner08, compositeLink0C));
                     break;
 
                 case Gedx8ObjectKind.ThinType2:
-                    loadedObject.Sub10002D30(2, loaderMode, resolvedPath);
+                    loadedObject.Sub10002D30(2, loaderMode, CreateThinRuntime(kind, fileName, resolvedPath, effectiveSearchDirectory, loaderMode, recordOwner08, compositeLink0C));
                     break;
 
                 default:
@@ -318,12 +356,9 @@ namespace Gedx8MusicDriver.Core
                 return false;
             }
 
-            if (setMode)
+            if (setMode && !TryWriteResolvedProperty(selector, value))
             {
-                if (!TryWriteResolvedProperty(selector, value))
-                {
-                    return false;
-                }
+                return false;
             }
 
             if (!TryReadResolvedProperty(selector, out storedValue))
@@ -409,6 +444,14 @@ namespace Gedx8MusicDriver.Core
             _value1BC = 0;
             _value1C0 = null;
             _value1C4 = 0;
+            Array.Clear(_selector3Triple188);
+            Array.Clear(_typedSelectorBackings18C);
+            Array.Clear(_typedDescriptors124);
+            _typedDescriptorCount01 = 0;
+            _simplePropertyCreateCount02C60 = 0;
+            _typedPropertyCreateCount02C90 = 0;
+            _lastPropertyCreateTokenHash = 0;
+            _lastPropertyCreateResult = 0;
             SynthInitConfig = Gedx8SynthInitConfig.Empty;
             IsSynthInitialized = false;
             _disposed = true;
@@ -449,6 +492,13 @@ namespace Gedx8MusicDriver.Core
             uint[] table = BuildCompositeTable(seed, entryCount, groupCount);
 
             return new Gedx8CompositeContext(source04, driver08, link0C, descriptorId, entryCount, groupCount, resolvedPath, effectiveSearchDirectory, table);
+        }
+
+        private Gedx8ThinRuntime CreateThinRuntime(Gedx8ObjectKind kind, string fileName, string resolvedPath, string? searchDirectory, int loaderMode, object? owner08, object? helper0C)
+        {
+            string bindingToken = kind == Gedx8ObjectKind.ThinType1 ? "1000C268" : "1000C218";
+            int descriptorToken = kind == Gedx8ObjectKind.ThinType1 ? 1 : 2;
+            return new Gedx8ThinRuntime(kind, fileName, resolvedPath, searchDirectory, loaderMode, bindingToken, descriptorToken, owner08, helper0C);
         }
 
         private static uint[] BuildCompositeTable(int seed, byte entryCount, ushort groupCount)
@@ -538,78 +588,47 @@ namespace Gedx8MusicDriver.Core
                 return true;
             }
 
-            Gedx8ResolvedProperty binding;
-            switch (selector)
-            {
-                case 0:
-                    binding = new Gedx8ResolvedProperty(selector, 0x148, 0x17C, 0x18, 0x3C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false);
-                    break;
-
-                case 1:
-                    binding = new Gedx8ResolvedProperty(selector, 0x14C, 0x180, 0x1C, 0x40, Gedx8PropertyModeRequirement.Mode2Or3, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false);
-                    break;
-
-                case 2:
-                    binding = new Gedx8ResolvedProperty(selector, 0x150, 0x184, 0x20, 0x44, Gedx8PropertyModeRequirement.Mode2Or3, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false);
-                    break;
-
-                case 3:
-                    binding = new Gedx8ResolvedProperty(selector, 0x154, 0x188, 0x28, 0x4C, Gedx8PropertyModeRequirement.Mode0, Gedx8PropertyInitializationKind.Simple02C60, "1000C548", false, true);
-                    break;
-
-                case 4:
-                    binding = new Gedx8ResolvedProperty(selector, 0x158, 0x18C, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C528", true, false);
-                    break;
-
-                case 5:
-                    binding = new Gedx8ResolvedProperty(selector, 0x15C, 0x190, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4E8", true, false);
-                    break;
-
-                case 6:
-                    binding = new Gedx8ResolvedProperty(selector, 0x160, 0x194, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4F8", true, false);
-                    break;
-
-                case 7:
-                    binding = new Gedx8ResolvedProperty(selector, 0x164, 0x198, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C508", true, false);
-                    break;
-
-                case 8:
-                    binding = new Gedx8ResolvedProperty(selector, 0x168, 0x19C, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C518", true, false);
-                    break;
-
-                case 9:
-                    binding = new Gedx8ResolvedProperty(selector, 0x16C, 0x1A0, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C538", true, false);
-                    break;
-
-                case 10:
-                    binding = new Gedx8ResolvedProperty(selector, 0x170, 0x1A4, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4C8", true, false);
-                    break;
-
-                case 11:
-                    binding = new Gedx8ResolvedProperty(selector, 0x174, 0x1A8, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4D8", true, false);
-                    break;
-
-                case 12:
-                    binding = new Gedx8ResolvedProperty(selector, 0x178, 0x1AC, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4B8", true, false);
-                    break;
-
-                default:
-                    return false;
-            }
-
-            if (!IsModeAllowed(binding.ModeRequirement))
+            Gedx8LazyPropertyObject? propertyObject = CreateLazyPropertyObject(selector);
+            if (propertyObject == null)
             {
                 return false;
             }
 
-            if (!TryInitializeResolvedProperty(binding))
+            if (!IsModeAllowed(propertyObject.ModeRequirement))
             {
                 return false;
             }
 
-            _cachedObjects148[selector] = binding;
+            if (!propertyObject.Initialize(this))
+            {
+                return false;
+            }
+
+            _cachedObjects148[selector] = propertyObject;
             _propertyResolved17C[selector] = true;
+            _propertyValues17C[selector] = propertyObject.CurrentValue;
             return true;
+        }
+
+        private Gedx8LazyPropertyObject? CreateLazyPropertyObject(int selector)
+        {
+            return selector switch
+            {
+                0 => new Gedx8LazyPropertyObject(0, 0x148, 0x17C, 0x18, 0x3C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false),
+                1 => new Gedx8LazyPropertyObject(1, 0x14C, 0x180, 0x1C, 0x40, Gedx8PropertyModeRequirement.Mode2Or3, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false),
+                2 => new Gedx8LazyPropertyObject(2, 0x150, 0x184, 0x20, 0x44, Gedx8PropertyModeRequirement.Mode2Or3, Gedx8PropertyInitializationKind.Simple02C60, "1000C558", false, false),
+                3 => new Gedx8LazyPropertyObject(3, 0x154, 0x188, 0x28, 0x4C, Gedx8PropertyModeRequirement.Mode0, Gedx8PropertyInitializationKind.Simple02C60, "1000C548", false, true),
+                4 => new Gedx8LazyPropertyObject(4, 0x158, 0x18C, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C528", true, false),
+                5 => new Gedx8LazyPropertyObject(5, 0x15C, 0x190, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4E8", true, false),
+                6 => new Gedx8LazyPropertyObject(6, 0x160, 0x194, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4F8", true, false),
+                7 => new Gedx8LazyPropertyObject(7, 0x164, 0x198, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C508", true, false),
+                8 => new Gedx8LazyPropertyObject(8, 0x168, 0x19C, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C518", true, false),
+                9 => new Gedx8LazyPropertyObject(9, 0x16C, 0x1A0, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C538", true, false),
+                10 => new Gedx8LazyPropertyObject(10, 0x170, 0x1A4, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4C8", true, false),
+                11 => new Gedx8LazyPropertyObject(11, 0x174, 0x1A8, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4D8", true, false),
+                12 => new Gedx8LazyPropertyObject(12, 0x178, 0x1AC, 0x10, 0x0C, Gedx8PropertyModeRequirement.None, Gedx8PropertyInitializationKind.Typed02C90, "1000C4B8", true, false),
+                _ => null,
+            };
         }
 
         private bool IsModeAllowed(Gedx8PropertyModeRequirement modeRequirement)
@@ -623,37 +642,106 @@ namespace Gedx8MusicDriver.Core
             };
         }
 
-        private bool TryInitializeResolvedProperty(Gedx8ResolvedProperty binding)
+        private bool TryCreateSimplePropertyObject10002C60(Gedx8LazyPropertyObject propertyObject)
         {
-            if (binding.InitializationKind == Gedx8PropertyInitializationKind.Typed02C90)
+            if (_disposed || _value1C0 == null)
             {
-                _propertyValues17C[binding.Selector] = ComputeBootstrapPropertyValue(binding.Selector);
-            }
-            else if (binding.IsTripleHead)
-            {
-                _propertyValues17C[binding.Selector] = 0;
+                _lastPropertyCreateResult = -1;
+                return false;
             }
 
+            _simplePropertyCreateCount02C60++;
+            _lastPropertyCreateTokenHash = ComputeStableHash(propertyObject.InitializationToken);
+            _lastPropertyFactoryTokenHash = ComputeStableHash("1000C1C8");
+            _lastPropertyCreateTargetOffset = propertyObject.CachedObjectOffset;
+            _lastPropertyCreateResult = 0;
+
+            propertyObject.BindCreateResult(_lastPropertyCreateTokenHash, _lastPropertyFactoryTokenHash, _simplePropertyCreateCount02C60, _lastPropertyCreateTargetOffset);
             return true;
         }
 
-        private int ComputeBootstrapPropertyValue(int selector)
+        private bool TryCreateTypedPropertyObject10002C90(Gedx8LazyPropertyObject propertyObject)
         {
-            object? currentObject = _value1C0;
-            string? seedSource = currentObject switch
+            if (_disposed || _value1C0 == null)
             {
-                Gedx8LoadedObject loadedObject => loadedObject.ResolvedPath ?? loadedObject.FileName,
-                _ => SearchDirectory,
-            };
-
-            if (string.IsNullOrWhiteSpace(seedSource))
-            {
-                return 0;
+                _lastPropertyCreateResult = -1;
+                return false;
             }
 
-            int seed = ComputeStableHash(seedSource);
-            int rotated = RotateLeft(seed ^ (selector * 0x1111), selector & 15);
-            return rotated & 0x7FFFFFFF;
+            if (_typedDescriptorCount01 >= _typedDescriptors124.Length)
+            {
+                _lastPropertyCreateResult = -1;
+                return false;
+            }
+
+            int descriptorOrdinal = _typedDescriptorCount01 + 1;
+            int descriptorTableOffset = 0x124 + (_typedDescriptorCount01 * 0x20);
+
+            Gedx8TypedPropertyDescriptor descriptor = new Gedx8TypedPropertyDescriptor(
+                0x20,
+                propertyObject.Selector,
+                propertyObject.CachedObjectOffset,
+                propertyObject.ValueOffset,
+                propertyObject.GetMethodOffset,
+                propertyObject.SetMethodOffset,
+                ComputeStableHash(propertyObject.InitializationToken),
+                ComputeStableHash("1000C1C8"),
+                descriptorOrdinal,
+                descriptorTableOffset,
+                0x54,
+                0x5C);
+
+            _typedDescriptors124[_typedDescriptorCount01] = descriptor;
+            _typedDescriptorCount01++;
+            _typedPropertyCreateCount02C90++;
+            _lastPropertyCreateTokenHash = descriptor.TokenHash;
+            _lastPropertyFactoryTokenHash = descriptor.FactoryTokenHash;
+            _lastPropertyCreateTargetOffset = descriptorTableOffset;
+            _lastPropertyCreateResult = 0;
+
+            propertyObject.BindTypedDescriptor(descriptor, _typedPropertyCreateCount02C90);
+            return true;
+        }
+
+        private int ReadPropertyBackingValue(int selector)
+        {
+            return selector switch
+            {
+                3 => _selector3Triple188[0],
+                4 => _selector3Triple188[1],
+                5 => _selector3Triple188[2],
+                >= 6 and <= 12 => _typedSelectorBackings18C[selector - 4],
+                _ => 0,
+            };
+        }
+
+        private void WritePropertyBackingValue(int selector, int value)
+        {
+            switch (selector)
+            {
+                case 3:
+                    _selector3Triple188[0] = value;
+                    _typedSelectorBackings18C[0] = _selector3Triple188[1];
+                    _typedSelectorBackings18C[1] = _selector3Triple188[2];
+                    break;
+
+                case 4:
+                    _selector3Triple188[1] = value;
+                    _typedSelectorBackings18C[0] = value;
+                    break;
+
+                case 5:
+                    _selector3Triple188[2] = value;
+                    _typedSelectorBackings18C[1] = value;
+                    break;
+
+                default:
+                    if (selector >= 6 && selector <= 12)
+                    {
+                        _typedSelectorBackings18C[selector - 4] = value;
+                    }
+                    break;
+            }
         }
 
         private bool TryReadResolvedProperty(int selector, out int storedValue)
@@ -665,7 +753,17 @@ namespace Gedx8MusicDriver.Core
                 return false;
             }
 
-            storedValue = _propertyValues17C[selector];
+            if (_cachedObjects148[selector] is not Gedx8LazyPropertyObject propertyObject)
+            {
+                return false;
+            }
+
+            if (!propertyObject.TryRead(this, out storedValue))
+            {
+                return false;
+            }
+
+            _propertyValues17C[selector] = storedValue;
             return true;
         }
 
@@ -676,20 +774,191 @@ namespace Gedx8MusicDriver.Core
                 return false;
             }
 
-            object? cachedObject = _cachedObjects148[selector];
-            if (cachedObject is not Gedx8ResolvedProperty binding)
+            if (_cachedObjects148[selector] is not Gedx8LazyPropertyObject propertyObject)
             {
                 return false;
             }
 
-            if (!IsModeAllowed(binding.ModeRequirement))
+            if (!IsModeAllowed(propertyObject.ModeRequirement))
             {
                 return false;
             }
 
-            _propertyValues17C[selector] = value;
+            if (!propertyObject.TryWrite(this, value))
+            {
+                return false;
+            }
+
+            _propertyValues17C[selector] = propertyObject.CurrentValue;
             return true;
         }
+
+        private sealed class Gedx8LazyPropertyObject
+        {
+            private readonly int[] _tripleValues;
+
+            internal Gedx8LazyPropertyObject(int selector, int cachedObjectOffset, int valueOffset, int getMethodOffset, int setMethodOffset, Gedx8PropertyModeRequirement modeRequirement, Gedx8PropertyInitializationKind initializationKind, string initializationToken, bool bootstrapReadAfterCreate, bool isTripleHead)
+            {
+                Selector = selector;
+                CachedObjectOffset = cachedObjectOffset;
+                ValueOffset = valueOffset;
+                GetMethodOffset = getMethodOffset;
+                SetMethodOffset = setMethodOffset;
+                ModeRequirement = modeRequirement;
+                InitializationKind = initializationKind;
+                InitializationToken = initializationToken;
+                BootstrapReadAfterCreate = bootstrapReadAfterCreate;
+                IsTripleHead = isTripleHead;
+                _tripleValues = new int[3];
+            }
+
+            internal int Selector { get; }
+
+            internal int CachedObjectOffset { get; }
+
+            internal int ValueOffset { get; }
+
+            internal int GetMethodOffset { get; }
+
+            internal int SetMethodOffset { get; }
+
+            internal Gedx8PropertyModeRequirement ModeRequirement { get; }
+
+            internal Gedx8PropertyInitializationKind InitializationKind { get; }
+
+            internal string InitializationToken { get; }
+
+            internal bool BootstrapReadAfterCreate { get; }
+
+            internal bool IsTripleHead { get; }
+
+            internal bool IsInitialized { get; private set; }
+
+            internal int CurrentValue { get; private set; }
+
+            internal int CreationOrdinal { get; private set; }
+
+            internal int CreationTokenHash { get; private set; }
+
+            internal int CreationFactoryTokenHash { get; private set; }
+
+            internal int CreationTargetOffset { get; private set; }
+
+            internal Gedx8TypedPropertyDescriptor TypedDescriptor { get; private set; }
+
+            internal bool Initialize(Gedx8EngineCore owner)
+            {
+                if (IsInitialized)
+                {
+                    return true;
+                }
+
+                bool created = InitializationKind switch
+                {
+                    Gedx8PropertyInitializationKind.Simple02C60 => owner.TryCreateSimplePropertyObject10002C60(this),
+                    Gedx8PropertyInitializationKind.Typed02C90 => owner.TryCreateTypedPropertyObject10002C90(this),
+                    _ => false,
+                };
+
+                if (!created)
+                {
+                    return false;
+                }
+
+                CurrentValue = owner.ReadPropertyBackingValue(Selector);
+
+                if (IsTripleHead)
+                {
+                    _tripleValues[0] = owner._selector3Triple188[0];
+                    _tripleValues[1] = owner._selector3Triple188[1];
+                    _tripleValues[2] = owner._selector3Triple188[2];
+                    CurrentValue = _tripleValues[0];
+                }
+
+                IsInitialized = true;
+                return true;
+            }
+
+            internal void BindCreateResult(int creationTokenHash, int creationFactoryTokenHash, int creationOrdinal, int creationTargetOffset)
+            {
+                CreationTokenHash = creationTokenHash;
+                CreationFactoryTokenHash = creationFactoryTokenHash;
+                CreationOrdinal = creationOrdinal;
+                CreationTargetOffset = creationTargetOffset;
+                TypedDescriptor = default;
+            }
+
+            internal void BindTypedDescriptor(Gedx8TypedPropertyDescriptor typedDescriptor, int creationOrdinal)
+            {
+                TypedDescriptor = typedDescriptor;
+                CreationTokenHash = typedDescriptor.TokenHash;
+                CreationFactoryTokenHash = typedDescriptor.FactoryTokenHash;
+                CreationOrdinal = creationOrdinal;
+                CreationTargetOffset = typedDescriptor.DescriptorTableOffset;
+            }
+
+            internal bool TryRead(Gedx8EngineCore owner, out int value)
+            {
+                value = 0;
+                if (!IsInitialized)
+                {
+                    return false;
+                }
+
+                if (IsTripleHead)
+                {
+                    _tripleValues[0] = owner._selector3Triple188[0];
+                    _tripleValues[1] = owner._selector3Triple188[1];
+                    _tripleValues[2] = owner._selector3Triple188[2];
+                    CurrentValue = _tripleValues[0];
+                }
+                else
+                {
+                    CurrentValue = owner.ReadPropertyBackingValue(Selector);
+                }
+
+                value = CurrentValue;
+                return true;
+            }
+
+            internal bool TryWrite(Gedx8EngineCore owner, int value)
+            {
+                if (!IsInitialized)
+                {
+                    return false;
+                }
+
+                if (IsTripleHead)
+                {
+                    _tripleValues[0] = value;
+                    owner._selector3Triple188[0] = _tripleValues[0];
+                    owner._selector3Triple188[1] = _tripleValues[1];
+                    owner._selector3Triple188[2] = _tripleValues[2];
+                    owner.WritePropertyBackingValue(3, _tripleValues[0]);
+                    CurrentValue = _tripleValues[0];
+
+                    if (owner._cachedObjects148[4] is Gedx8LazyPropertyObject selector4 && selector4.IsInitialized)
+                    {
+                        selector4.CurrentValue = owner.ReadPropertyBackingValue(4);
+                        owner._propertyValues17C[4] = selector4.CurrentValue;
+                    }
+
+                    if (owner._cachedObjects148[5] is Gedx8LazyPropertyObject selector5 && selector5.IsInitialized)
+                    {
+                        selector5.CurrentValue = owner.ReadPropertyBackingValue(5);
+                        owner._propertyValues17C[5] = selector5.CurrentValue;
+                    }
+
+                    return true;
+                }
+
+                owner.WritePropertyBackingValue(Selector, value);
+                CurrentValue = owner.ReadPropertyBackingValue(Selector);
+                return true;
+            }
+        }
+
+        private readonly record struct Gedx8TypedPropertyDescriptor(int EntrySize, int Selector, int CachedObjectOffset, int ValueOffset, int GetMethodOffset, int SetMethodOffset, int TokenHash, int FactoryTokenHash, int Ordinal, int DescriptorTableOffset, int FinalizeMethodOffset, int CommitMethodOffset);
 
         private enum Gedx8PropertyModeRequirement
         {
