@@ -164,10 +164,10 @@ namespace Gedx8MusicDriver.Api
             return loadedObject.TryCompositeCall04190(arg0, arg1, arg2, arg3, arg4);
         }
 
-        internal bool Method10001E70(Gedx8LoadedObject loadedObject, string? value)
+        internal bool Method10001E70(Gedx8LoadedObject loadedObject, IntPtr rawValue)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall04250(value);
+            return loadedObject.TryCompositeCall04250(rawValue);
         }
 
         internal bool Method10001E90(Gedx8LoadedObject loadedObject, out byte readyByte)
@@ -176,16 +176,16 @@ namespace Gedx8MusicDriver.Api
             return loadedObject.TryCompositeCall04280(out readyByte);
         }
 
-        internal bool Method10001EB0(Gedx8LoadedObject loadedObject, string name, out string? resolvedValue)
+        internal bool Method10001EB0(Gedx8LoadedObject loadedObject, int mode, IntPtr structurePointer)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall042C0(name, out resolvedValue);
+            return loadedObject.TryCompositeCall042C0(mode, structurePointer);
         }
 
-        internal bool Method10001EE0(Gedx8LoadedObject loadedObject, string name, out string? resolvedValue)
+        internal bool Method10001EE0(Gedx8LoadedObject loadedObject, int mode, IntPtr structurePointer)
         {
             ThrowIfDisposed();
-            return loadedObject.TryCompositeCall04490(name, out resolvedValue);
+            return loadedObject.TryCompositeCall04490(mode, structurePointer);
         }
 
         internal bool Method10001F10(Gedx8LoadedObject loadedObject, out byte value0, out byte value1)

@@ -53,6 +53,22 @@ The C# side now reflects these confirmed points from the ASM and runtime traces:
 This means the old model of “one C# object that is instantly active and directly doubles as the native composite build result” was too flat.
 The current C# code now follows the observed outer-record / inner-object split much more closely.
 
+
+## Additional wrapper tightening in this update
+
+The C# model was tightened further for the binary composite helper paths:
+
+- `10001E70` / `10004250` now keep the incoming raw value as a native-style forwarded integer/pointer-sized value instead of treating it only as text.
+- `10001EB0` / `100042C0` are now modeled as the observed binary mode dispatcher:
+  - mode `0` writes an 8-byte pair back to the caller buffer
+  - mode `1` consumes a 4-byte cell-style structure and latches a mutable per-cell payload
+- `10001EE0` / `10004490` are now modeled as the matching binary read path:
+  - mode `0` writes the same 8-byte pair shape
+  - mode `1` either returns the current latched triple or reads the payload byte of a selected cell
+- the composite runtime now keeps a mutable per-cell payload map on top of the packed table, so the `042C0` write path and `04490` read path share real state instead of falling back to string dictionaries
+
+These paths are still conservative reimplementations, but they now follow the observed native binary call shapes much more closely than the earlier name-based placeholder model.
+
 ## Remaining open points
 
 The project is still not at a full original-behavior end state.

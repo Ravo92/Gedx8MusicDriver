@@ -411,8 +411,7 @@ namespace Gedx8MusicDriver.Interop
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            string? value = ReadAnsiString(valuePointer);
-            return ToNativeBool(instance != null && loadedObject != null && instance.Method10001E70(loadedObject, value));
+            return ToNativeBool(instance != null && loadedObject != null && instance.Method10001E70(loadedObject, valuePointer));
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
@@ -431,47 +430,31 @@ namespace Gedx8MusicDriver.Interop
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot4C_10001EB0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer, IntPtr resolvedValueOut)
+        private static byte Slot4C_10001EB0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr modeValue, IntPtr structurePointer)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            if (instance == null || loadedObject == null || resolvedValueOut == IntPtr.Zero)
+            if (instance == null || loadedObject == null)
             {
                 return 0;
             }
 
-            string? name = ReadAnsiString(namePointer);
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                Marshal.WriteIntPtr(resolvedValueOut, IntPtr.Zero);
-                return 0;
-            }
-
-            bool result = instance.Method10001EB0(loadedObject, name, out string? resolvedValue);
-            Marshal.WriteIntPtr(resolvedValueOut, loadedObject.StoreCompositeResolveAForExport(resolvedValue));
-            return ToNativeBool(result);
+            int mode = unchecked((int)modeValue);
+            return ToNativeBool(instance.Method10001EB0(loadedObject, mode, structurePointer));
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-        private static byte Slot50_10001EE0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr namePointer, IntPtr resolvedValueOut)
+        private static byte Slot50_10001EE0(IntPtr instanceHandle, IntPtr loadedObjectHandle, IntPtr modeValue, IntPtr structurePointer)
         {
             Gedx8DriverInstance? instance = ResolveDriver(instanceHandle);
             Gedx8LoadedObject? loadedObject = ResolveLoadedObject(loadedObjectHandle);
-            if (instance == null || loadedObject == null || resolvedValueOut == IntPtr.Zero)
+            if (instance == null || loadedObject == null)
             {
                 return 0;
             }
 
-            string? name = ReadAnsiString(namePointer);
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                Marshal.WriteIntPtr(resolvedValueOut, IntPtr.Zero);
-                return 0;
-            }
-
-            bool result = instance.Method10001EE0(loadedObject, name, out string? resolvedValue);
-            Marshal.WriteIntPtr(resolvedValueOut, loadedObject.StoreCompositeResolveBForExport(resolvedValue));
-            return ToNativeBool(result);
+            int mode = unchecked((int)modeValue);
+            return ToNativeBool(instance.Method10001EE0(loadedObject, mode, structurePointer));
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
